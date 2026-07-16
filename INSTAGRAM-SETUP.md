@@ -49,10 +49,16 @@ GET /{page-id}?fields=instagram_business_account&access_token={page-access-token
 
 ## Step 6 — Set up Cloudinary (free) for video hosting
 
-Instagram's API requires your video to already be sitting at a public web address before it'll publish it — it can't accept an upload straight from your computer. Cloudinary's free tier handles this.
+Instagram's API requires your video to already be sitting at a public web address before it'll publish it — it can't accept an upload straight from your computer. Cloudinary's free tier handles this. The dashboard uploads videos **directly from your browser to Cloudinary** (not through this app's server) using an **unsigned upload preset**, so large reel files never have to pass through — and potentially get rejected by — a hosting platform's request-size limit.
 
 1. Sign up free at [cloudinary.com](https://cloudinary.com/users/register/free).
-2. On your Cloudinary dashboard, copy your **Cloud name**, **API Key**, and **API Secret**.
+2. On your Cloudinary dashboard home page, copy your **Cloud name**.
+3. Go to **Settings (gear icon) → Upload → Upload presets → Add upload preset**.
+   - Set **Signing Mode** to **Unsigned**.
+   - Give it a name you'll recognize, e.g. `cwc_dashboard_unsigned`.
+   - Save. Copy the preset name — that's your `CLOUDINARY_UPLOAD_PRESET`.
+
+(You do **not** need the API Key/Secret for this app anymore — only the cloud name and this unsigned preset name, both of which are safe to expose in the browser.)
 
 ## Step 7 — Add everything to `.env`
 
@@ -62,8 +68,7 @@ Open `server/.env` (create it from `server/.env.example` first if you haven't) a
 INSTAGRAM_ACCESS_TOKEN=the-page-access-token-from-step-4
 INSTAGRAM_BUSINESS_ID=the-numeric-id-from-step-5
 CLOUDINARY_CLOUD_NAME=from-step-6
-CLOUDINARY_API_KEY=from-step-6
-CLOUDINARY_API_SECRET=from-step-6
+CLOUDINARY_UPLOAD_PRESET=from-step-6
 ```
 
 Restart the server (`Ctrl+C` then `npm start` in the `server` folder). Open `http://localhost:3001` — you should see **● Instagram Connected (@yourhandle)** next to Settings.
@@ -73,6 +78,7 @@ Restart the server (`Ctrl+C` then `npm start` in the `server` folder). Open `htt
 - **Growth Tracker → 🔄 Sync from Instagram** — pulls your current follower count in as today's entry.
 - **Reel Performance → 🔄 Sync from Instagram** — pulls your last 12 posts' captions, views, likes, and comments in, matching by post URL so it updates existing entries instead of duplicating them.
 - **Reel Performance → 📤 Publish Reel** — pick a video file and write a caption, click Publish. This takes 1–3 minutes while Instagram processes the video; leave the window open. Only videos 5–90 seconds, vertical (9:16), qualify to appear in the Reels tab — longer clips will publish but may not show as a Reel.
+- **Reel Performance → ✨ Upload & Schedule** — pick a video, Claude drafts a caption/description/hashtags, then either schedule it for a future date/time or post it as a trial right away. See `SUPABASE-SETUP.md` — this needs Supabase configured too, since queued posts are tracked server-side.
 
 ## Limits worth knowing
 

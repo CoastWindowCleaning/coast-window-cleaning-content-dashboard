@@ -76,7 +76,7 @@ async function generateMonthlyReport(monthKey, opts) {
   if (!state || !Array.isArray(state.reels)) throw new Error('No dashboard data available yet.');
 
   const reelsInMonth = state.reels.filter((r) => monthKeyOf(r.date) === monthKey);
-  if (reelsInMonth.length < 3 && !opts.force) {
+  if (reelsInMonth.length === 0 || (reelsInMonth.length < 3 && !opts.force)) {
     const report = {
       monthKey,
       generatedAt: new Date().toISOString(),

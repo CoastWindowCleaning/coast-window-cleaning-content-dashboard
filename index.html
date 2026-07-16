@@ -475,6 +475,14 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,
           <div class="section-head" style="margin-bottom:10px;"><h2>Reach, Saves &amp; Watch Time — Last 12 Reels</h2></div>
           <div class="chart-wrap" style="height:260px;"><canvas id="igTrendChart"></canvas></div>
         </div>
+        <div class="section-head" style="margin-top:24px;">
+          <h2>Monthly Top/Bottom Reels Report</h2>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <select id="monthlyReportSelect" onchange="renderMonthlyReports()" style="background:var(--bg-elev-2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:7px 9px;font-size:12.5px;font-family:inherit;"></select>
+            <button class="btn btn-sm" onclick="generateMonthlyReportNow()">Generate Report</button>
+          </div>
+        </div>
+        <div class="panel" id="monthlyReportPanel"></div>
       </div>
 
       <!-- PAGE: Growth -->
@@ -501,6 +509,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,
             <button class="btn btn-sm" onclick="clearSampleData()"><svg class="ic" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> Clear sample data</button>
             <button class="btn btn-sm" onclick="syncFromInstagram(this)"><svg class="ic" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg> Sync from Instagram</button>
             <button class="btn btn-sm" onclick="openPublishReelForm()"><svg class="ic" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> Publish Reel</button>
+            <button class="btn btn-sm" onclick="openUploadReelModal()"><svg class="ic" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l1.8 5.4L19 9l-5.2 1.6L12 16l-1.8-5.4L5 9l5.2-1.6L12 2z"/><path d="M19 15l.9 2.6L22 18.5l-2.1.9L19 22l-.9-2.6-2.1-.9 2.1-.9z"/></svg> Upload &amp; Schedule</button>
             <button class="btn btn-primary btn-sm" onclick="openReelForm()">+ Add reel</button>
           </div>
         </div>
@@ -510,6 +519,13 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,
             <svg class="ic" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Chart.js failed to load from the CDN (are you offline?). Showing the table below instead — all data is still here.
           </div>
           <div id="reelDetail"></div>
+        </div>
+        <div class="panel" style="margin-top:16px;">
+          <div class="panel-toolbar">
+            <strong style="font-size:13.5px;">Content Queue — scheduled &amp; trial posts</strong>
+            <button class="btn btn-sm" onclick="renderContentQueue()"><svg class="ic" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg> Refresh</button>
+          </div>
+          <div id="contentQueueList"><div class="empty-note">Loading…</div></div>
         </div>
         <div class="panel" style="margin-top:16px;">
           <div class="table-wrap">
@@ -565,9 +581,20 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,
           <div class="panel-toolbar"><strong style="font-size:13.5px;">Leaderboard — avg views per reel</strong></div>
           <div id="leaderboard"></div>
         </div>
+        <div class="panel" style="margin-top:16px;">
+          <div class="panel-toolbar"><strong style="font-size:13.5px;">Common Traits Across Competitors</strong></div>
+          <div id="competitorTraitsPanel"></div>
+        </div>
+        <div class="panel" style="margin-top:16px;">
+          <div class="panel-toolbar">
+            <strong style="font-size:13.5px;">Competitor-Informed Strategy</strong>
+            <button class="btn btn-primary btn-sm" id="competitorInsightBtn" onclick="askAnalystAboutCompetitors()"><svg class="ic" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l1.8 5.4L19 9l-5.2 1.6L12 16l-1.8-5.4L5 9l5.2-1.6L12 2z"/><path d="M19 15l.9 2.6L22 18.5l-2.1.9L19 22l-.9-2.6-2.1-.9 2.1-.9z"/></svg> Ask Analyst About Competitors</button>
+          </div>
+          <div id="competitorInsightPanel"></div>
+        </div>
       </div>
 
-      <div class="footer-note">Everything on this page is stored locally in your browser (localStorage). No account, no server, no data leaves your machine.</div>
+      <div class="footer-note">Data is saved locally in your browser and synced to your own server/Supabase project. AI calls go to Anthropic; Instagram/Cloudinary calls go to Meta/Cloudinary when those features are used.</div>
     </div>
   </div>
 </div>
@@ -674,17 +701,20 @@ function defaultData(){
     ],
     nextBacklogId:4,
     competitors:[
-      {id:1,name:'Competitor A',handle:'@competitor_a_placeholder',url:'https://www.instagram.com/competitor_a_placeholder/',followers:12000,posts:[]},
-      {id:2,name:'Competitor B',handle:'@competitor_b_placeholder',url:'https://www.instagram.com/competitor_b_placeholder/',followers:8400,posts:[]},
-      {id:3,name:'Competitor C',handle:'@competitor_c_placeholder',url:'https://www.instagram.com/competitor_c_placeholder/',followers:21500,posts:[]}
+      {id:1,name:'Competitor A',handle:'@competitor_a_placeholder',url:'https://www.instagram.com/competitor_a_placeholder/',followers:12000,posts:[],followerHistory:[]},
+      {id:2,name:'Competitor B',handle:'@competitor_b_placeholder',url:'https://www.instagram.com/competitor_b_placeholder/',followers:8400,posts:[],followerHistory:[]},
+      {id:3,name:'Competitor C',handle:'@competitor_c_placeholder',url:'https://www.instagram.com/competitor_c_placeholder/',followers:21500,posts:[],followerHistory:[]}
     ],
     nextCompetitorId:4,
     nextPostId:1,
+    nextCompetitorFollowerEntryId:1,
     usage:{ monthKey:'', spendUsd:0, calls:0, capUsd:15 },
     followerHistory:[
       {id:1, date:'2026-07-11', count:500}
     ],
-    nextFollowerEntryId:2
+    nextFollowerEntryId:2,
+    monthlyReports:[],
+    competitorInsight:null
   };
 }
 
@@ -705,10 +735,14 @@ function mergeWithDefaults(parsed){
     const stage = item.used ? 'launched' : 'idea';
     return Object.assign({}, item, {stage:stage});
   });
+  const mergedCompetitors = (Array.isArray(parsed.competitors) ? parsed.competitors : d.competitors).map(function(c){
+    return Object.assign({posts:[], followerHistory:[]}, c);
+  });
   return Object.assign(d, parsed, {
     settings: Object.assign(d.settings, parsed.settings||{}),
     agents: mergedAgents,
-    ideasBacklog: mergedBacklog
+    ideasBacklog: mergedBacklog,
+    competitors: mergedCompetitors
   });
 }
 function loadData(){
@@ -1181,22 +1215,26 @@ function buildAnalystPrompt(s){
 '- Work ethic visible — the crew, tools, and process are part of the appeal, not just the finished result\n'+
 '- Minimalist aesthetic — clean compositions, no excessive overlays\n'+
 '- Value-driven — tie recommendations back to customer ROI (cleaner windows = curb appeal = property value), not vanity metrics alone\n\n'+
-'DATA PROVIDED BELOW includes, per reel: views, likes, comments, and — only when available — reach, saved count, average watch time, engagement rate, save rate, content type, hook/angle, format, caption tone, hashtags, location tag, CTA, inquiries, jobs booked, and comment sentiment (if analyzed). Account-level profile views and bio link clicks are included when available.\n\n'+
+'DATA PROVIDED BELOW comes in three parts: (1) the last 12 reels in full detail, (2) a HISTORICAL ARCHIVE covering every reel ever logged — aggregated by content type/hook/format/tone plus all-time top and bottom performers, and (3) COMPETITOR INTELLIGENCE — logged top posts from tracked competitors (hook, script structure, core idea, views, cadence, follower trend). When asked about long-term trends or "what\'s worked over time," use the HISTORICAL ARCHIVE, not just the last 12. When asked for new ideas or what to try next, cross-reference COMPETITOR INTELLIGENCE — ground suggestions in what has actually worked for THIS account and for tracked competitors, never generic Instagram growth advice.\n\n'+
 'IMPORTANT — DO NOT INVENT DATA: Some metrics (replays, pause rate, autoplay-vs-click rate, impressions attributed to a specific hashtag or location, a competitor\'s private engagement numbers, revenue) are NOT available from Instagram\'s API to anyone, including us. If asked about these, say plainly that this data isn\'t available rather than estimating a number. Work only from what is actually provided below.\n\n'+
-'ACCOUNT + REEL DATA:\n[paste exported reel data here]\n\n'+
+'ACCOUNT + REEL DATA (last 12, full detail):\n[paste exported reel data here]\n\n'+
 'Return exactly this structure:\n\n'+
 '## TOP PERFORMERS\n'+
 'Identify the top 2-3 reels by engagement rate AND, separately, by business outcome (inquiries/jobs booked) if that data is present. Name the specific content type/hook/format pattern they share. A post with high saves/likes but zero inquiries is a weaker result than a modest-engagement post that converted to real jobs — say so explicitly when this happens.\n\n'+
 '## WHAT\'S NOT WORKING\n'+
 'Identify the bottom 2-3 performers. Look for a shared weakness (weak hook, wrong content type for the audience, no clear CTA, posted at a bad time). Be specific and blunt — don\'t hedge.\n\n'+
+'## LONG-TERM PATTERN (from the full historical archive, not just last 12)\n'+
+'Using the HISTORICAL ARCHIVE data below, name the content type/hook/format/tone combination with the best all-time avg engagement rate across 2+ reels, and the one with the worst. If the archive is too small to say anything beyond the last-12 window, say so plainly instead of forcing a pattern.\n\n'+
 '## CONTENT GAP ASSESSMENT\n'+
 'Based on the content types, hooks, and formats actually logged, what hasn\'t been covered in a while? Note any of the brand\'s core content pillars (transformation/before-after, team-in-action, customer testimonial, educational tips, behind-the-scenes/commercial scale) that are underrepresented in this data.\n\n'+
 '## NOVELTY CHECK\n'+
 'Flag any idea you\'re about to recommend below that repeats the same content type + hook combination already used in the last 60 days of data provided. Suggest a variation instead of an exact repeat.\n\n'+
+'## COMPETITOR-INFORMED IDEAS\n'+
+'Using COMPETITOR INTELLIGENCE below, name at least one idea a tracked competitor has proven works (cite which competitor and post) that this account has not tried, adapted to this account\'s brand voice. If no competitor posts are logged, say so rather than inventing one.\n\n'+
 '## 3 CONCRETE CHANGES FOR NEXT 2 WEEKS\n'+
 'Give exactly 3 changes, each with:\n'+
 '- The specific change (not vague advice like "post more consistently" — say exactly what to do differently)\n'+
-'- The reel(s) in the data that justify this change\n'+
+'- The reel(s) — ours or a tracked competitor\'s — in the data that justify this change\n'+
 '- What metric should improve if this works, and roughly by how much\n\n'+
 'Keep the whole analysis honest and specific to THIS data — don\'t give generic Instagram growth advice, and don\'t cite any metric that wasn\'t actually included above.';
 }
@@ -1233,9 +1271,9 @@ function showPage(pageId){
   if(btn) btn.classList.add('active');
   const titleEl = document.getElementById('pageTitle');
   if(titleEl) titleEl.textContent = PAGE_TITLES[pageId] || pageId;
-  if(pageId === 'reels') requestAnimationFrame(()=>renderChart());
+  if(pageId === 'reels'){ requestAnimationFrame(()=>renderChart()); renderContentQueue(); }
   if(pageId === 'growth') requestAnimationFrame(()=>renderFollowerChart());
-  if(pageId === 'overview') requestAnimationFrame(()=>renderIgStats());
+  if(pageId === 'overview'){ requestAnimationFrame(()=>renderIgStats()); refreshMonthlyReportsFromServer(); }
   if(pageId === 'agents') renderAgentList();
 }
 
@@ -1400,7 +1438,7 @@ const NO_EMOJI_CONSTRAINT = '\n\nBRAND STYLE RULE: Never use emojis anywhere in 
 function buildSystemPrompt(key){
   let base = AGENT_META[key].promptFn(data.settings);
   if(key === 'planner') base = base.replace('[paste backlog here]', getBacklogText());
-  if(key === 'analyst') base = base.replace('[paste exported reel data here]', getReelDataText()) + '\n\nCONTENT PIPELINE (current ideas backlog, with each idea\'s stage):\n' + getBacklogText();
+  if(key === 'analyst') base = base.replace('[paste exported reel data here]', getReelDataText()) + '\n\n' + getHistoricalArchiveText() + '\n\n' + getCompetitorIntelText() + '\n\nCONTENT PIPELINE (current ideas backlog, with each idea\'s stage):\n' + getBacklogText();
   if(key === 'hook') base = base.replace('\n\nIDEA: [paste idea here]', '\n\nThe user will provide the idea they want scripted in the chat. Wait for their message.');
   return base + NO_EMOJI_CONSTRAINT;
 }
@@ -1547,6 +1585,53 @@ function renderInstagramBadge(){
   }
 }
 
+/* ---- App config (Cloudinary direct upload / scheduling availability) ---- */
+let appConfig = null;
+async function loadAppConfig(){
+  try{
+    const resp = await fetch('/api/config', {cache:'no-store'});
+    appConfig = await resp.json();
+  }catch(e){
+    appConfig = {cloudinary:{configured:false}, schedulingEnabled:false};
+  }
+  return appConfig;
+}
+
+// Uploads straight from the browser to Cloudinary (unsigned preset) so large
+// video files never pass through this app's own server -- important once
+// deployed on Vercel, where serverless functions reject large request bodies.
+function uploadVideoToCloudinary(file, onProgress){
+  return new Promise(function(resolve, reject){
+    if(!appConfig || !appConfig.cloudinary || !appConfig.cloudinary.configured){
+      reject(new Error('Cloudinary is not configured for direct upload — see INSTAGRAM-SETUP.md.'));
+      return;
+    }
+    const cloudName = appConfig.cloudinary.cloudName;
+    const uploadPreset = appConfig.cloudinary.uploadPreset;
+    const url = 'https://api.cloudinary.com/v1_1/'+encodeURIComponent(cloudName)+'/video/upload';
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', uploadPreset);
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', url);
+    xhr.upload.onprogress = function(e){
+      if(onProgress && e.lengthComputable) onProgress(e.loaded/e.total);
+    };
+    xhr.onload = function(){
+      if(xhr.status>=200 && xhr.status<300){
+        try{ resolve(JSON.parse(xhr.responseText)); }
+        catch(e){ reject(new Error('Cloudinary returned an unexpected response.')); }
+      } else {
+        let msg = 'Cloudinary upload failed ('+xhr.status+')';
+        try{ const j = JSON.parse(xhr.responseText); if(j.error && j.error.message) msg = j.error.message; }catch(e){}
+        reject(new Error(msg));
+      }
+    };
+    xhr.onerror = function(){ reject(new Error('Network error uploading to Cloudinary.')); };
+    xhr.send(formData);
+  });
+}
+
 async function syncFromInstagram(btn){
   if(!instagramStatus) await checkInstagramHealth();
   if(!instagramStatus.connected){
@@ -1676,6 +1761,79 @@ function getReelDataText(){
   }).join('\n\n');
 
   return header + '\n\nREELS (last 12)\n' + reelBlocks;
+}
+
+// Full-history aggregation for the Analyst Agent -- last12Reels()/getReelDataText()
+// only cover the most recent 12 reels; this covers everything ever logged so
+// the agent can speak to long-term patterns, not just the current window.
+function getHistoricalArchiveText(){
+  const all = sortedReels();
+  if(all.length <= 12){
+    return 'HISTORICAL ARCHIVE\nOnly ' + all.length + ' reel(s) logged in total so far — same as the last-12 window above, nothing longer-term to report yet.';
+  }
+  function rate(r){ return r.views ? (((r.likes||0)+(r.comments||0))/Number(r.views)) : 0; }
+  const ranked = [...all].sort((a,b)=> rate(b)-rate(a));
+  const top5 = ranked.slice(0,5);
+  const bottom5 = ranked.slice(-5).reverse();
+
+  const buckets = {};
+  function addBucket(key, label, r){
+    if(!label) return;
+    const k = key+':'+label;
+    if(!buckets[k]) buckets[k] = {key:key, label:label, count:0, totalViews:0, totalEngRate:0};
+    buckets[k].count++;
+    buckets[k].totalViews += Number(r.views||0);
+    buckets[k].totalEngRate += rate(r);
+  }
+  all.forEach(function(r){
+    addBucket('Content type', r.contentType, r);
+    addBucket('Hook', r.hook, r);
+    addBucket('Format', r.format, r);
+    addBucket('Tone', r.captionTone, r);
+  });
+  const bucketLines = Object.keys(buckets).map(k=>buckets[k])
+    .filter(b=>b.count>=2)
+    .sort((a,b)=> (b.totalEngRate/b.count) - (a.totalEngRate/a.count))
+    .map(b=> '- ' + b.key + ' "' + b.label + '": ' + b.count + ' reels, avg views ' + fmtNum(b.totalViews/b.count) + ', avg engagement rate ' + ((b.totalEngRate/b.count)*100).toFixed(2)+'%');
+
+  const reelLine = r => '- '+r.date+' | "'+r.caption+'" | '+fmtNum(r.views)+' views | '+(rate(r)*100).toFixed(2)+'% engagement | '+(r.contentType||'—')+' / '+(r.hook||'—');
+
+  return [
+    'HISTORICAL ARCHIVE (all ' + all.length + ' reels ever logged, not just the last 12)',
+    'All-time top 5 by engagement rate:'
+  ].concat(top5.map(reelLine))
+   .concat(['All-time bottom 5 by engagement rate:'])
+   .concat(bottom5.map(reelLine))
+   .concat(['Performance by attribute (content type / hook / format / tone), only attributes logged on 2+ reels shown, sorted best to worst avg engagement rate:'])
+   .concat(bucketLines.length ? bucketLines : ['- Not enough reels with these fields filled in yet to bucket reliably.'])
+   .join('\n');
+}
+
+// Competitor top-post data (hook/script/idea + follower trend + cadence),
+// so agent recommendations are grounded in what has proven to work for
+// tracked competitors, not just generic Instagram advice.
+function getCompetitorIntelText(){
+  if(!data.competitors.length) return 'COMPETITOR INTELLIGENCE\nNo competitors tracked yet.';
+  const lines = ['COMPETITOR INTELLIGENCE'];
+  data.competitors.forEach(function(c){
+    const avg = competitorAvgViews(c);
+    const deltaText = competitorFollowerDeltaText(c);
+    lines.push('- ' + c.name + ' (' + c.handle + '): ' + fmtNum(c.followers) + ' followers' + (deltaText?' ('+deltaText+')':'') +
+      (avg ? ', avg views on logged top posts: ' + fmtNum(avg) : '') + ', ' + competitorCadenceText(c));
+  });
+  const allPosts = data.competitors.flatMap(c=>(c.posts||[]).map(p=>Object.assign({competitorName:c.name}, p)));
+  if(allPosts.length){
+    lines.push('');
+    lines.push('LOGGED COMPETITOR TOP POSTS:');
+    allPosts.forEach(function(p){
+      lines.push('- ' + p.competitorName + (p.date?' | '+p.date:'') + (p.contentType?' | '+p.contentType:'') + ' | Views: ' + fmtNum(p.views) +
+        (p.hook ? ' | Hook: ' + p.hook : '') + (p.idea ? ' | Idea: ' + p.idea : ''));
+    });
+  } else {
+    lines.push('');
+    lines.push('No competitor top posts logged yet.');
+  }
+  return lines.join('\n');
 }
 
 function ensureUsageMonth(){
@@ -1955,6 +2113,11 @@ async function submitPublishReel(){
     showToast('Instagram not connected — see INSTAGRAM-SETUP.md');
     return;
   }
+  if(!appConfig) await loadAppConfig();
+  if(!appConfig.cloudinary.configured){
+    showToast('Cloudinary not configured — see INSTAGRAM-SETUP.md');
+    return;
+  }
 
   const fileInput = document.getElementById('pub_video');
   const captionInput = document.getElementById('pub_caption');
@@ -1969,16 +2132,24 @@ async function submitPublishReel(){
   const file = fileInput.files[0];
   const caption = captionInput.value || '';
 
+  const ok = confirm('This will publish immediately to Instagram (' + data.settings.handle + ') with this caption:\n\n' + caption + '\n\nContinue?');
+  if(!ok) return;
+
   btn.disabled = true;
   btn.textContent = 'Publishing…';
-  statusEl.textContent = 'Uploading and publishing — this can take 1–3 minutes while Instagram processes the video. Do not close this window.';
 
   try{
-    const formData = new FormData();
-    formData.append('video', file);
-    formData.append('caption', caption);
+    statusEl.textContent = 'Uploading to Cloudinary… 0%';
+    const uploadResult = await uploadVideoToCloudinary(file, function(pct){
+      statusEl.textContent = 'Uploading to Cloudinary… ' + Math.round(pct*100) + '%';
+    });
 
-    const resp = await fetch('/api/instagram/publish', { method:'POST', body:formData });
+    statusEl.textContent = 'Publishing to Instagram — this can take 1–3 minutes while Instagram processes the video. Do not close this window.';
+    const resp = await fetch('/api/instagram/publish', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ videoUrl: uploadResult.secure_url, caption })
+    });
     const json = await resp.json();
     if(!resp.ok) throw new Error(json.error || 'Publish failed');
 
@@ -2002,6 +2173,208 @@ async function submitPublishReel(){
   }
 }
 
+/* ---- Upload -> AI scan -> caption/hashtags -> schedule or trial post ---- */
+let uploadScanResult = null;
+
+function openUploadReelModal(){
+  uploadScanResult = null;
+  openModal(
+    '<div class="modal-header"><div class="modal-title">'+icon('sparkle',16)+' Upload &amp; Schedule Reel</div><button class="modal-close" onclick="closeModal()">'+icon('x',16)+'</button></div>'+
+    '<div class="modal-body" id="uploadReelBody">'+
+      '<div class="empty-note" style="margin-bottom:14px;">Drop in a video and Claude drafts a caption, description, and hashtags from the filename (plus a frame grab, when available) using your brand voice rules. You can edit everything before scheduling or posting.</div>'+
+      '<div class="field" style="margin-bottom:14px;"><label>Video File</label><input type="file" id="up_video" accept="video/*"/></div>'+
+      '<div id="uploadReelStatus" class="empty-note"></div>'+
+      '<div class="form-actions"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn btn-primary" id="uploadScanBtn" onclick="submitUploadScan()">'+icon('sparkle',14)+' Scan with AI</button></div>'+
+    '</div>',
+    {wide:true}
+  );
+}
+
+async function submitUploadScan(){
+  if(!appConfig) await loadAppConfig();
+  if(!appConfig.cloudinary.configured){
+    showToast('Cloudinary not configured — see INSTAGRAM-SETUP.md');
+    return;
+  }
+  if(!backendStatus) await checkBackendHealth();
+  if(!backendStatus.ok || !backendStatus.hasKey){
+    showToast('AI backend not connected — see AI-AGENT-SETUP.md');
+    return;
+  }
+
+  const fileInput = document.getElementById('up_video');
+  const statusEl = document.getElementById('uploadReelStatus');
+  const btn = document.getElementById('uploadScanBtn');
+  if(!fileInput.files.length){ showToast('Choose a video file first'); return; }
+  const file = fileInput.files[0];
+
+  btn.disabled = true;
+  try{
+    statusEl.textContent = 'Uploading to Cloudinary… 0%';
+    const uploadResult = await uploadVideoToCloudinary(file, function(pct){
+      statusEl.textContent = 'Uploading to Cloudinary… ' + Math.round(pct*100) + '%';
+    });
+
+    statusEl.textContent = 'Analyzing with Claude…';
+    const resp = await fetch('/api/reels/analyze', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ videoUrl: uploadResult.secure_url, publicId: uploadResult.public_id, filename: file.name })
+    });
+    const json = await resp.json();
+    if(!resp.ok) throw new Error(json.error || 'Analysis failed');
+    if(json.costUsd) recordUsage(json);
+
+    uploadScanResult = json;
+    renderUploadReviewStep(json);
+  }catch(e){
+    statusEl.textContent = 'Error: ' + e.message;
+  }finally{
+    btn.disabled = false;
+  }
+}
+
+function renderUploadReviewStep(result){
+  const body = document.getElementById('uploadReelBody');
+  if(!body) return;
+  body.innerHTML =
+    (!result.hasFrame ? '<div class="chart-fallback-msg" style="margin-bottom:14px;">'+icon('alert',14)+' No visual frame could be grabbed for this upload — the draft below is based on the filename only. Double-check it matches the actual footage before posting.</div>' : '')+
+    '<div class="field" style="margin-bottom:14px;"><label>Caption</label><textarea id="up_caption" rows="4">'+escapeHtml(result.caption)+'</textarea></div>'+
+    '<div class="field" style="margin-bottom:14px;"><label>Hashtags</label><input type="text" id="up_hashtags" value="'+escapeHtml(result.hashtags)+'"/></div>'+
+    '<div class="field" style="margin-bottom:14px;"><label>What this video shows (for your reference — not posted)</label><textarea id="up_description" rows="2">'+escapeHtml(result.description)+'</textarea></div>'+
+    '<hr style="border-color:var(--border);margin:16px 0;"/>'+
+    '<div class="form-grid" style="margin-bottom:6px;">'+
+      '<div class="field full"><label>Schedule for (leave blank, then use "Post as Trial Now" to post immediately instead)</label><input type="datetime-local" id="up_scheduledFor" value=""/></div>'+
+    '</div>'+
+    '<div id="uploadReelStatus2" class="empty-note"></div>'+
+    '<div class="form-actions">'+
+      '<button class="btn" onclick="closeModal()">Cancel</button>'+
+      '<button class="btn" onclick="submitScheduleReel(false)">'+icon('calendar',14)+' Schedule</button>'+
+      '<button class="btn btn-primary" onclick="submitScheduleReel(true)">'+icon('zap',14)+' Post as Trial Now</button>'+
+    '</div>';
+}
+
+async function submitScheduleReel(isTrial){
+  if(!uploadScanResult) return;
+  const caption = document.getElementById('up_caption').value;
+  const hashtags = document.getElementById('up_hashtags').value;
+  const description = document.getElementById('up_description').value;
+  const scheduledForInput = document.getElementById('up_scheduledFor').value;
+  const statusEl = document.getElementById('uploadReelStatus2');
+
+  if(!isTrial && !scheduledForInput){
+    showToast('Pick a date/time to schedule, or use "Post as Trial Now"');
+    return;
+  }
+
+  let scheduledForIso;
+  if(isTrial){
+    scheduledForIso = new Date().toISOString();
+    const ok = confirm('This will publish to Instagram (' + data.settings.handle + ') within the next minute, for real. Caption:\n\n' + caption + (hashtags ? '\n\n'+hashtags : '') + '\n\nContinue?');
+    if(!ok) return;
+  } else {
+    scheduledForIso = new Date(scheduledForInput).toISOString();
+  }
+
+  statusEl.textContent = isTrial ? 'Queuing trial post…' : 'Scheduling…';
+  try{
+    const resp = await fetch('/api/scheduled-reels', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        videoUrl: uploadScanResult.videoUrl,
+        sourceFilename: uploadScanResult.sourceFilename,
+        caption: caption, hashtags: hashtags, description: description,
+        scheduledFor: scheduledForIso,
+        isTrial: !!isTrial,
+        aiCostUsd: uploadScanResult.costUsd
+      })
+    });
+    const json = await resp.json();
+    if(!resp.ok) throw new Error(json.error || 'Could not queue the reel');
+    closeModal();
+    showToast(isTrial ? 'Trial post queued — publishing within a minute' : 'Reel scheduled');
+    renderContentQueue();
+  }catch(e){
+    statusEl.textContent = 'Error: ' + e.message;
+  }
+}
+
+/* ---- Content Queue (scheduled + trial reels) ---- */
+async function renderContentQueue(){
+  const container = document.getElementById('contentQueueList');
+  if(!container) return;
+  if(!appConfig) await loadAppConfig();
+  if(!appConfig.schedulingEnabled){
+    container.innerHTML = '<div class="empty-note">Scheduling needs Supabase + Instagram + Cloudinary all configured on the server — see SUPABASE-SETUP.md.</div>';
+    return;
+  }
+  try{
+    const resp = await fetch('/api/scheduled-reels', {cache:'no-store'});
+    const json = await resp.json();
+    if(!resp.ok) throw new Error(json.error || 'Could not load queue');
+    const rows = json.reels || [];
+    if(!rows.length){
+      container.innerHTML = '<div class="empty-note">Nothing queued yet. Use "Upload &amp; Schedule" above to add a reel.</div>';
+      return;
+    }
+    container.innerHTML = rows.map(queueRowHtml).join('');
+  }catch(e){
+    container.innerHTML = '<div class="empty-note">Could not load the content queue: '+escapeHtml(e.message)+'</div>';
+  }
+}
+
+function queueStatusBadge(status){
+  const map = {
+    queued:{cls:'', label:'Queued'},
+    publishing:{cls:'running', label:'Publishing…'},
+    posted:{cls:'connected', label:'Posted'},
+    failed:{cls:'', label:'Failed'},
+    canceled:{cls:'', label:'Canceled'}
+  };
+  const m = map[status] || {cls:'', label:status};
+  return '<span class="status-badge '+m.cls+'"><span class="dot"></span> '+escapeHtml(m.label)+'</span>';
+}
+
+function queueRowHtml(row){
+  const when = row.scheduled_for ? new Date(row.scheduled_for).toLocaleString() : '—';
+  return '<div class="detail-card" style="margin-bottom:10px;">'+
+    '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;">'+
+      '<div style="flex:1;min-width:200px;">'+
+        '<div class="cap">'+escapeHtml((row.caption||'').slice(0,140))+(row.is_trial?' <span style="color:var(--text-faint);font-weight:500;">(trial)</span>':'')+'</div>'+
+        '<div class="detail-stats"><span>'+icon('calendar',13)+' '+escapeHtml(when)+'</span>'+(row.source_filename?'<span>'+icon('film',13)+' '+escapeHtml(row.source_filename)+'</span>':'')+'</div>'+
+        (row.error_message ? '<div style="color:var(--red);font-size:12px;margin-top:6px;">'+escapeHtml(row.error_message)+'</div>' : '')+
+        (row.ig_permalink ? '<div style="margin-top:6px;"><a href="'+escapeHtml(row.ig_permalink)+'" target="_blank" rel="noopener">View on Instagram '+icon('externalLink',12)+'</a></div>' : '')+
+      '</div>'+
+      '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;">'+
+        queueStatusBadge(row.status)+
+        (row.status==='queued' ? '<button class="btn btn-sm btn-danger" onclick="cancelQueuedReel('+row.id+')">Cancel</button>' : '')+
+        (row.status==='failed' ? '<button class="btn btn-sm" onclick="retryQueuedReel('+row.id+')">Retry</button>' : '')+
+      '</div>'+
+    '</div>'+
+  '</div>';
+}
+
+async function cancelQueuedReel(id){
+  if(!confirm('Cancel this queued post?')) return;
+  try{
+    const resp = await fetch('/api/scheduled-reels/'+id+'/cancel', {method:'POST'});
+    const json = await resp.json();
+    if(!resp.ok) throw new Error(json.error || 'Could not cancel');
+    renderContentQueue();
+    showToast('Canceled');
+  }catch(e){ showToast('Error: ' + e.message); }
+}
+async function retryQueuedReel(id){
+  try{
+    const resp = await fetch('/api/scheduled-reels/'+id+'/retry', {method:'POST'});
+    const json = await resp.json();
+    if(!resp.ok) throw new Error(json.error || 'Could not retry');
+    renderContentQueue();
+    showToast('Requeued');
+  }catch(e){ showToast('Error: ' + e.message); }
+}
+
 /* ============================= SECTION D: COMPETITORS ============================= */
 function myAvgViews(){
   const cur = last12Reels();
@@ -2011,6 +2384,26 @@ function myAvgViews(){
 function competitorAvgViews(c){
   if(!c.posts.length) return null;
   return c.posts.reduce((s,p)=>s+Number(p.views||0),0) / c.posts.length;
+}
+
+function competitorCadenceText(c){
+  const dated = (c.posts||[]).filter(p=>p.date).map(p=>p.date).sort();
+  if(dated.length < 2) return 'Log 2+ dated posts to see cadence';
+  const first = new Date(dated[0]+'T00:00:00');
+  const last = new Date(dated[dated.length-1]+'T00:00:00');
+  const weeks = Math.max(1, (last-first)/(7*86400000));
+  const perWeek = dated.length / weeks;
+  return '~' + (perWeek>=1 ? perWeek.toFixed(1) : perWeek.toFixed(2)) + ' posts/wk (from '+dated.length+' logged posts)';
+}
+function sortedCompetitorFollowerHistory(c){
+  return [...(c.followerHistory||[])].sort((a,b)=>a.date.localeCompare(b.date));
+}
+function competitorFollowerDeltaText(c){
+  const h = sortedCompetitorFollowerHistory(c);
+  if(h.length < 2) return '';
+  const delta = h[h.length-1].count - h[0].count;
+  const sign = delta >= 0 ? '+' : '';
+  return sign + fmtNum(delta) + ' since ' + fmtDate(h[0].date);
 }
 
 function renderCompetitors(){
@@ -2023,32 +2416,187 @@ function renderCompetitors(){
       '<button class="btn btn-primary btn-sm" onclick="openCompetitorForm()">+ Add competitor</button>'+
     '</div>';
     renderLeaderboard();
+    renderCommonTraitsPanel();
+    renderCompetitorInsightPanel();
     return;
   }
   grid.innerHTML = data.competitors.map(function(c){
     const avg = competitorAvgViews(c);
+    const deltaText = competitorFollowerDeltaText(c);
     return '<div class="competitor-card">'+
       '<h3>'+escapeHtml(c.name)+'</h3>'+
       '<div class="handle"><a href="'+escapeHtml(c.url)+'" target="_blank" rel="noopener">'+escapeHtml(c.handle)+'</a></div>'+
-      '<div class="competitor-meta"><span>'+icon('users',13)+' '+fmtNum(c.followers)+' followers</span><span>Avg views: '+(avg?fmtNum(avg):'—')+'</span></div>'+
+      '<div class="competitor-meta"><span>'+icon('users',13)+' '+fmtNum(c.followers)+' followers'+(deltaText?' ('+deltaText+')':'')+'</span><span>Avg views: '+(avg?fmtNum(avg):'—')+'</span></div>'+
+      '<div class="chart-wrap" style="height:60px;margin-bottom:10px;"><canvas id="competitorFollowerChart_'+c.id+'"></canvas></div>'+
+      '<div class="competitor-meta" style="margin-top:-4px;"><span>'+icon('activity',13)+' '+competitorCadenceText(c)+'</span></div>'+
       '<div>'+ (c.posts.length ? c.posts.map(postMini).join('') : '<div class="empty-note" style="margin-bottom:8px;">No top posts logged yet.</div>') +'</div>'+
-      '<div style="display:flex;gap:8px;">'+
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;">'+
         '<button class="btn btn-sm" onclick="openTopPostForm('+c.id+')">+ Add top post</button>'+
+        '<button class="btn btn-sm" onclick="openCompetitorFollowerLogForm('+c.id+')">+ Log followers</button>'+
         '<button class="btn btn-sm" onclick="editCompetitor('+c.id+')">'+icon('edit',13)+' Edit</button>'+
         '<button class="btn btn-sm btn-danger" onclick="deleteCompetitor('+c.id+')">Delete</button>'+
       '</div>'+
     '</div>';
   }).join('');
   renderLeaderboard();
+  renderCommonTraitsPanel();
+  renderCompetitorInsightPanel();
+  requestAnimationFrame(renderCompetitorFollowerCharts);
+}
+
+let competitorChartInstances = {};
+function renderCompetitorFollowerCharts(){
+  data.competitors.forEach(function(c){
+    const canvas = document.getElementById('competitorFollowerChart_'+c.id);
+    if(!canvas) return;
+    if(competitorChartInstances[c.id]){ competitorChartInstances[c.id].destroy(); delete competitorChartInstances[c.id]; }
+    const history = sortedCompetitorFollowerHistory(c);
+    if(history.length < 2 || typeof Chart === 'undefined'){ canvas.style.display = 'none'; return; }
+    canvas.style.display = 'block';
+    const colors = chartColors();
+    competitorChartInstances[c.id] = new Chart(canvas.getContext('2d'), {
+      type:'line',
+      data:{ labels: history.map(h=>fmtDate(h.date)), datasets:[{ data: history.map(h=>h.count), borderColor: colors.accent, backgroundColor:'transparent', tension:0.25, pointRadius:0, borderWidth:1.5 }] },
+      options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}, tooltip:{enabled:true}}, scales:{ x:{display:false}, y:{display:false} } }
+    });
+  });
+}
+
+function openCompetitorFollowerLogForm(competitorId){
+  const c = data.competitors.find(x=>x.id===competitorId);
+  if(!c) return;
+  const today = new Date().toISOString().slice(0,10);
+  openModal(
+    '<div class="modal-header"><div class="modal-title">Log Followers — '+escapeHtml(c.name)+'</div><button class="modal-close" onclick="closeModal()">'+icon('x',16)+'</button></div>'+
+    '<div class="modal-body">'+
+      '<div class="form-grid">'+
+        '<div class="field"><label>Date</label><input type="date" id="cfl_date" value="'+today+'"/></div>'+
+        '<div class="field"><label>Follower Count</label><input type="number" id="cfl_count" value="'+(c.followers||0)+'"/></div>'+
+      '</div>'+
+      '<div class="form-actions"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveCompetitorFollowerLog('+competitorId+')">Save</button></div>'+
+    '</div>'
+  );
+}
+function saveCompetitorFollowerLog(competitorId){
+  const c = data.competitors.find(x=>x.id===competitorId);
+  if(!c) return;
+  const dateVal = document.getElementById('cfl_date').value || new Date().toISOString().slice(0,10);
+  const countVal = Number(document.getElementById('cfl_count').value) || 0;
+  if(!Array.isArray(c.followerHistory)) c.followerHistory = [];
+  const existing = c.followerHistory.find(h=>h.date===dateVal);
+  if(existing){ existing.count = countVal; }
+  else { c.followerHistory.push({id:data.nextCompetitorFollowerEntryId++, date:dateVal, count:countVal}); }
+  c.followers = countVal; // keep the headline follower count in sync with the latest log
+  saveData();
+  closeModal();
+  renderCompetitors();
+  showToast('Follower count logged for ' + c.name);
 }
 
 function postMini(p){
+  const meta = [p.contentType, p.date].filter(Boolean).join(' · ');
   return '<div class="post-mini">'+
-    '<div><a href="'+escapeHtml(p.url)+'" target="_blank" rel="noopener">Post '+icon('externalLink',12)+'</a> <span class="pv">· '+fmtNum(p.views)+' views</span></div>'+
+    '<div><a href="'+escapeHtml(p.url)+'" target="_blank" rel="noopener">Post '+icon('externalLink',12)+'</a> <span class="pv">· '+fmtNum(p.views)+' views'+(meta?' · '+escapeHtml(meta):'')+'</span></div>'+
     (p.hook ? '<div><strong>Hook:</strong> '+escapeHtml(p.hook)+'</div>' : '')+
     (p.script ? '<div><strong>Script:</strong> '+escapeHtml(p.script)+'</div>' : '')+
     (p.idea ? '<div><strong>Idea:</strong> '+escapeHtml(p.idea)+'</div>' : '')+
   '</div>';
+}
+
+/* ---- Common traits across all logged competitor posts ---- */
+function renderCommonTraitsPanel(){
+  const el = document.getElementById('competitorTraitsPanel');
+  if(!el) return;
+  const allPosts = data.competitors.flatMap(c=>(c.posts||[]).map(p=>Object.assign({competitorName:c.name}, p)));
+  if(!allPosts.length){
+    el.innerHTML = '<div class="empty-note">Log top posts (with content type) across your competitors to see shared patterns here.</div>';
+    return;
+  }
+  const typeCounts = {};
+  allPosts.forEach(function(p){
+    if(!p.contentType) return;
+    typeCounts[p.contentType] = (typeCounts[p.contentType]||0) + 1;
+  });
+  const typeEntries = Object.keys(typeCounts).sort((a,b)=>typeCounts[b]-typeCounts[a]);
+  const maxCount = Math.max(1, ...typeEntries.map(t=>typeCounts[t]));
+
+  const typeBars = typeEntries.length
+    ? typeEntries.map(function(t){
+        const pct = Math.round((typeCounts[t]/maxCount)*100);
+        return '<div class="leaderboard-row"><div style="width:190px;">'+escapeHtml(t)+'</div>'+
+          '<div class="leaderboard-bar-bg"><div class="leaderboard-bar" style="width:'+pct+'%;"></div></div>'+
+          '<div style="width:70px;text-align:right;">'+typeCounts[t]+' post'+(typeCounts[t]===1?'':'s')+'</div></div>';
+      }).join('')
+    : '<div class="empty-note">No content type tagged on logged posts yet — add it in "+ Add top post".</div>';
+
+  const topByViews = [...allPosts].sort((a,b)=>Number(b.views||0)-Number(a.views||0)).slice(0,3);
+  const topList = topByViews.length
+    ? topByViews.map(function(p){
+        return '<div class="post-mini"><div><strong>'+escapeHtml(p.competitorName)+':</strong> '+(p.url?'<a href="'+escapeHtml(p.url)+'" target="_blank" rel="noopener">Post</a>':'Post')+' <span class="pv">· '+fmtNum(p.views)+' views'+(p.contentType?' · '+escapeHtml(p.contentType):'')+'</span></div>'+(p.hook?'<div><strong>Hook:</strong> '+escapeHtml(p.hook)+'</div>':'')+'</div>';
+      }).join('')
+    : '';
+
+  el.innerHTML =
+    '<div class="label" style="margin-bottom:10px;">Content type frequency across all logged competitor posts</div>'+
+    typeBars+
+    (topList ? '<div class="label" style="margin:16px 0 10px;">Highest-viewed logged competitor posts</div>' + topList : '');
+}
+
+/* ---- Ask Analyst about competitors ---- */
+function buildCompetitorInsightPrompt(s){
+  return 'You are the strategic intelligence layer for ' + s.businessName + '\'s Instagram presence, focused specifically on competitor benchmarking.\n\n' +
+    'BUSINESS: ' + s.businessName + '\nINSTAGRAM: ' + s.handle + '\n\n' +
+    'BRAND VOICE CONSTRAINTS: Authentic, direct, results-focused. Local pride in the service area. Work ethic visible. Minimalist aesthetic. Value-driven, not vanity-metric-driven.\n\n' +
+    'IMPORTANT — DO NOT INVENT DATA: only use what is actually provided below. A competitor\'s private engagement numbers, revenue, or anything not explicitly logged is not available — say so rather than estimating.\n\n' +
+    'OUR RECENT PERFORMANCE:\n' + getReelDataText() + '\n\n' +
+    getCompetitorIntelText() + '\n\n' +
+    'Return exactly this structure:\n\n' +
+    '## WHAT\'S WORKING FOR COMPETITORS THAT WE HAVEN\'T TRIED\n' +
+    'Name specific content types/hooks logged from competitors that do NOT appear in our own recent reel data.\n\n' +
+    '## WHAT WE DO BETTER\n' +
+    'Based on the data actually provided, where do our results already beat the competitor benchmarks logged here?\n\n' +
+    '## 3 IDEAS ADAPTED FROM COMPETITORS\n' +
+    'For each: the competitor post it\'s adapted from, the adaptation for our brand voice/service area, and why it fits a gap in our own content.';
+}
+
+async function askAnalystAboutCompetitors(){
+  if(!backendStatus) await checkBackendHealth();
+  if(!backendStatus.ok || !backendStatus.hasKey){
+    showToast('AI backend not connected — see AI-AGENT-SETUP.md');
+    return;
+  }
+  const btn = document.getElementById('competitorInsightBtn');
+  if(btn){ btn.disabled = true; btn.textContent = 'Thinking…'; }
+  try{
+    const prompt = buildCompetitorInsightPrompt(data.settings) + NO_EMOJI_CONSTRAINT;
+    const resp = await fetch('/api/run-agent', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({agentKey:'competitorInsight', prompt})
+    });
+    const json = await resp.json();
+    if(!resp.ok) throw new Error(json.error || 'Request failed');
+    data.competitorInsight = { text: json.text, generatedAt: new Date().toISOString(), costUsd: json.costUsd||0 };
+    recordUsage(json);
+    saveData();
+    renderCompetitorInsightPanel();
+    showToast('Competitor-informed ideas ready');
+  }catch(e){
+    showToast('AI error: ' + e.message);
+  }finally{
+    if(btn){ btn.disabled = false; btn.innerHTML = icon('sparkle',14)+' Ask Analyst About Competitors'; }
+  }
+}
+
+function renderCompetitorInsightPanel(){
+  const el = document.getElementById('competitorInsightPanel');
+  if(!el) return;
+  if(!data.competitorInsight){
+    el.innerHTML = '<div class="empty-note">Click "Ask Analyst About Competitors" to get ideas grounded in both your own reel performance and your logged competitor posts.</div>';
+    return;
+  }
+  const ci = data.competitorInsight;
+  el.innerHTML = '<div style="color:var(--text-dim);font-size:12px;margin-bottom:10px;">Generated '+escapeHtml(fmtDate(ci.generatedAt.slice(0,10)))+'</div>'+
+    '<div style="font-size:13.5px;">'+formatAssistantMarkdown(ci.text)+'</div>';
 }
 
 function renderLeaderboard(){
@@ -2125,6 +2673,7 @@ const EXTRACTION_PROMPT_TEMPLATE = function(s){
 };
 
 function openTopPostForm(competitorId){
+  const today = new Date().toISOString().slice(0,10);
   openModal(
     '<div class="modal-header"><div class="modal-title">Add Top Post</div><button class="modal-close" onclick="closeModal()">'+icon('x',16)+'</button></div>'+
     '<div class="modal-body">'+
@@ -2132,7 +2681,9 @@ function openTopPostForm(competitorId){
       '<pre class="prompt-box" style="margin-bottom:16px;">'+escapeHtml(EXTRACTION_PROMPT_TEMPLATE(data.settings))+'</pre>'+
       '<div class="form-grid">'+
         '<div class="field full"><label>Post URL</label><input type="text" id="p_url" placeholder="https://www.instagram.com/reel/..."/></div>'+
+        '<div class="field"><label>Posted On</label><input type="date" id="p_date" value="'+today+'"/></div>'+
         '<div class="field"><label>Views</label><input type="number" id="p_views" value="0"/></div>'+
+        '<div class="field full"><label>Content Type</label><select id="p_contentType">'+selectOptions(CONTENT_TYPES, '')+'</select></div>'+
         '<div class="field full"><label>Extracted Hook</label><textarea id="p_hook" rows="2" placeholder="Paste the extracted hook here"></textarea></div>'+
         '<div class="field full"><label>Extracted Script Summary</label><textarea id="p_script" rows="2" placeholder="Paste the extracted script structure here"></textarea></div>'+
         '<div class="field full"><label>Extracted Idea</label><textarea id="p_idea" rows="2" placeholder="Paste the extracted core idea here"></textarea></div>'+
@@ -2148,7 +2699,9 @@ function saveTopPost(competitorId){
   c.posts.push({
     id: data.nextPostId++,
     url: document.getElementById('p_url').value || '',
+    date: document.getElementById('p_date').value || '',
     views: Number(document.getElementById('p_views').value) || 0,
+    contentType: document.getElementById('p_contentType').value || '',
     hook: document.getElementById('p_hook').value || '',
     script: document.getElementById('p_script').value || '',
     idea: document.getElementById('p_idea').value || ''
@@ -2157,6 +2710,85 @@ function saveTopPost(competitorId){
   closeModal();
   renderCompetitors();
   showToast('Top post added');
+}
+
+/* ============================= MONTHLY TOP/BOTTOM REELS REPORT ============================= */
+async function refreshMonthlyReportsFromServer(){
+  try{
+    const resp = await fetch('/api/data', {cache:'no-store'});
+    if(!resp.ok) return;
+    const server = await resp.json();
+    if(server && Array.isArray(server.monthlyReports) && server.monthlyReports.length){
+      data.monthlyReports = server.monthlyReports;
+      saveData(true);
+    }
+  }catch(e){ /* offline or server unreachable -- show whatever's local */ }
+  renderMonthlyReports();
+}
+
+function renderMonthlyReports(){
+  const select = document.getElementById('monthlyReportSelect');
+  const panel = document.getElementById('monthlyReportPanel');
+  if(!select || !panel) return;
+  const reportsList = [...(data.monthlyReports||[])].sort((a,b)=> b.monthKey.localeCompare(a.monthKey));
+  if(!reportsList.length){
+    select.innerHTML = '<option value="">No reports yet</option>';
+    select.disabled = true;
+    panel.innerHTML = '<div class="empty-note">No monthly report yet. Reports auto-generate on the 1st of each month (once at least 3 reels are logged for the prior month), or click "Generate Report" to run it now for last month.</div>';
+    return;
+  }
+  select.disabled = false;
+  const currentVal = (select.value && reportsList.some(r=>r.monthKey===select.value)) ? select.value : reportsList[0].monthKey;
+  select.innerHTML = reportsList.map(r=>'<option value="'+r.monthKey+'"'+(r.monthKey===currentVal?' selected':'')+'>'+escapeHtml(r.monthLabel||r.monthKey)+'</option>').join('');
+  const report = reportsList.find(r=>r.monthKey===currentVal);
+  panel.innerHTML = monthlyReportHtml(report);
+}
+
+function monthlyReelList(title, reels){
+  if(!reels || !reels.length) return '';
+  return '<div class="brief-block"><h4>'+escapeHtml(title)+'</h4>'+
+    reels.map(function(rr){
+      return '<div class="post-mini"><div>'+(rr.url?'<a href="'+escapeHtml(rr.url)+'" target="_blank" rel="noopener">'+escapeHtml(rr.caption)+'</a>':escapeHtml(rr.caption))+' <span class="pv">· '+fmtNum(rr.views)+' views</span></div></div>';
+    }).join('')+
+  '</div>';
+}
+
+function monthlyReportHtml(r){
+  if(!r) return '';
+  if(r.insufficientData){
+    return '<div class="empty-note">'+escapeHtml(r.summary)+'</div>';
+  }
+  return '<div class="brief-card">'+
+    '<div style="color:var(--text-dim);font-size:12.5px;margin-bottom:14px;">'+escapeHtml(r.monthLabel||r.monthKey)+' · '+r.reelCount+' reels posted · generated '+escapeHtml(fmtDate((r.generatedAt||'').slice(0,10)))+'</div>'+
+    monthlyReelList('Top 3', r.top)+
+    monthlyReelList('Bottom 3', r.bottom)+
+    '<div class="brief-block"><h4>Analysis</h4><div style="font-size:13.5px;">'+formatAssistantMarkdown(r.summary||'')+'</div></div>'+
+  '</div>';
+}
+
+async function generateMonthlyReportNow(){
+  if(!backendStatus) await checkBackendHealth();
+  if(!backendStatus.ok || !backendStatus.hasKey){
+    showToast('AI backend not connected — see AI-AGENT-SETUP.md');
+    return;
+  }
+  showToast('Generating monthly report…');
+  try{
+    const resp = await fetch('/api/reports/monthly/generate', {
+      method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({force:true})
+    });
+    const json = await resp.json();
+    if(!resp.ok) throw new Error(json.error || 'Could not generate report');
+    if(!Array.isArray(data.monthlyReports)) data.monthlyReports = [];
+    data.monthlyReports = data.monthlyReports.filter(r=>r.monthKey!==json.report.monthKey);
+    data.monthlyReports.push(json.report);
+    if(json.report.costUsd) recordUsage(json.report);
+    saveData();
+    renderMonthlyReports();
+    showToast(json.report.insufficientData ? 'Not enough reels logged for that month yet' : 'Report generated');
+  }catch(e){
+    showToast('Error: ' + e.message);
+  }
 }
 
 /* ============================= SECTION E: MORNING BRIEF ============================= */
@@ -2440,6 +3072,7 @@ function renderAll(){
   if(activeNav && pageTitleEl) pageTitleEl.textContent = PAGE_TITLES[activeNav.getAttribute('data-page')] || '';
   renderStats();
   renderIgStats();
+  renderMonthlyReports();
   renderGrowthTracker();
   renderChart();
   renderReelTable();
@@ -2453,6 +3086,7 @@ renderThemeToggleIcon();
 checkBackendHealth();
 checkInstagramHealth();
 bootstrapFromServer();
+loadAppConfig();
 </script>
 </body>
 </html>

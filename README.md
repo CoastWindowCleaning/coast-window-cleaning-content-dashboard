@@ -8,10 +8,12 @@ costs a small amount in API tokens — see `AI-AGENT-SETUP.md`).
 
 ## What each file is
 
-- **`index.html`** — The dashboard itself. Double-click it to open it in your browser (or open it through the AI backend server, see below). All your data (reels, agent notes, competitors, settings, growth tracker) is saved automatically to your browser's local storage, so it's there next time you open it.
-- **`server/`** — Optional local backend (Node.js) that connects the dashboard's agents to the real Claude API instead of copy/paste, and connects to Instagram for stats sync + publishing. See `AI-AGENT-SETUP.md` and `INSTAGRAM-SETUP.md`.
+- **`index.html`** — The dashboard itself. Double-click it to open it in your browser, or (recommended) run it through the backend server below. Data is saved to your browser's local storage AND synced to the server, which mirrors it to Supabase when configured (see `SUPABASE-SETUP.md`) so it persists across devices and redeploys.
+- **`server/`** — Backend (Node.js/Express) that connects the dashboard's agents to the real Claude API, connects to Instagram for stats sync + publishing, uploads/schedules reels, generates monthly reports, and runs the scheduler cron. See `AI-AGENT-SETUP.md`, `INSTAGRAM-SETUP.md`, `SUPABASE-SETUP.md`.
 - **`AI-AGENT-SETUP.md`** — Step-by-step, beginner-friendly instructions for setting up the Claude API key and running the live AI backend.
-- **`INSTAGRAM-SETUP.md`** — Step-by-step, beginner-friendly instructions for connecting your Instagram Business account so the dashboard can sync your real stats and publish reels directly.
+- **`INSTAGRAM-SETUP.md`** — Step-by-step, beginner-friendly instructions for connecting your Instagram Business account so the dashboard can sync your real stats, publish reels directly, and upload videos for the AI caption/schedule flow.
+- **`SUPABASE-SETUP.md`** — Step-by-step instructions for setting up Supabase, which makes data persist across devices/redeploys and powers reel scheduling.
+- **`VERCEL-SETUP.md`** — Step-by-step instructions for deploying this dashboard to Vercel with auto-deploy on push to `main`.
 - **`telegram_brief.py`** — Optional. A Python script that sends your Morning Brief to your phone via Telegram, for free. See `TELEGRAM-SETUP.md`.
 - **`TELEGRAM-SETUP.md`** — Step-by-step, beginner-friendly instructions for setting up the Telegram bot and scheduling the daily brief.
 - **`README.md`** — This file.
@@ -68,10 +70,46 @@ today's idea, your saved hook/script, your latest reel's performance, and your
 last Analyst insight — with a one-click "Copy as text" for sending to yourself
 on Telegram or WhatsApp (or set up `telegram_brief.py` to do it automatically).
 
+## Upload a video and let AI draft the caption
+
+In **Reel Performance → ✨ Upload & Schedule**, drop in a video file. Claude
+drafts a caption, description, and hashtag set from the filename (and a
+frame grab, when available) using the same brand-voice rules as the Hook &
+Script Agent. Review/edit the draft, then either:
+- **Schedule** it for a specific future date/time (a background job checks
+  for due posts and publishes them automatically), or
+- **Post as Trial Now** to publish immediately.
+
+Both routes actually publish to Instagram for real — always review the
+caption before confirming. Track queued/publishing/posted/failed status in
+the **Content Queue** panel further down the Reels page. Needs Instagram +
+Cloudinary + Supabase configured — see `INSTAGRAM-SETUP.md` and
+`SUPABASE-SETUP.md`.
+
+## Monthly top/bottom reels report
+
+The **Overview** page auto-generates a report on the 1st of each month (once
+at least 3 reels are logged for the prior month) identifying your top 3 and
+bottom 3 reels by business outcome (or engagement rate, if no
+inquiries/jobs are logged) and summarizing what each group has in common.
+Past months stay accessible via the dropdown. Click **Generate Report** any
+time to run it on demand.
+
+## Competitor tab
+
+Beyond adding competitors and logging their top posts, the **Competitors**
+page also tracks: posting cadence (from dated logged posts), a follower
+growth sparkline per competitor (log counts periodically with **+ Log
+followers**), a **Common Traits** panel tallying content types across all
+logged competitor posts, and an **Ask Analyst About Competitors** button
+that generates ideas grounded in both your own performance and what's
+proven to work for tracked competitors.
+
 ## Backing up your data
 
-Your data lives in your browser's local storage, which means it's tied to
-that browser on that computer. To back it up or move it:
+Your data lives in your browser's local storage, and (once `SUPABASE-SETUP.md`
+is done) is also mirrored to Supabase, so it's no longer tied to one browser
+on one computer. As an extra manual backup, or to move data another way:
 
 - **Settings → Export data.json** downloads everything.
 - **Settings → Import data.json** restores it (on this or any other computer/browser).
