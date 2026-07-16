@@ -121,12 +121,37 @@ async function getRecentMedia(limit) {
 }
 
 async function getComments(mediaId, limit) {
-  const data = await igFetch('/' + mediaId + '/comments', {
-    fields: 'text,username,timestamp',
-    limit: limit || 30
-  });
+  // Prefer like_count + reply summary so callers can weigh comments by
+  // engagement, not just count them equally -- falls back to plainer field
+  // sets since replies.summary(true) isn't guaranteed on every API version.
+  const fieldSets = [
+    'text,username,timestamp,like_count,replies.summary(true)',
+    'text,username,timestamp,like_count',
+    'text,username,timestamp'
+  ];
+
+  let data = null, lastError = null;
+  for (const fields of fieldSets) {
+    try {
+      data = await igFetch('/' + mediaId + '/comments', { fields, limit: limit || 30 });
+      break;
+    } catch (e) {
+      lastError = e;
+    }
+  }
+  if (!data) {
+    console.warn('Comments unavailable for ' + mediaId + ': ' + (lastError && lastError.message));
+    return [];
+  }
+
   return (data.data || []).map(function (c) {
-    return { text: c.text || '', username: c.username || '', timestamp: c.timestamp };
+    return {
+      text: c.text || '',
+      username: c.username || '',
+      timestamp: c.timestamp,
+      likeCount: c.like_count != null ? c.like_count : 0,
+      replyCount: (c.replies && c.replies.summary) ? (c.replies.summary.total_count || 0) : 0
+    };
   });
 }
 

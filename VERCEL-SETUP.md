@@ -51,9 +51,17 @@ Exact values — copy from `server/.env` where noted, don't invent placeholders:
 | `SUPABASE_URL` | Copy from `server/.env` (see `SUPABASE-SETUP.md`) |
 | `SUPABASE_SERVICE_ROLE_KEY` | Copy from `server/.env` |
 | `MONTHLY_CAP_USD` | Copy from `server/.env` (or leave unset — defaults to 15) |
-| `CRON_SECRET` | **New** — generate any random string yourself, e.g. run `openssl rand -hex 24` locally and paste the output. This is what authorizes Vercel's own Cron Jobs to call your scheduler endpoint; Vercel automatically sends it as a Bearer token when this variable is set. |
+| `CRON_SECRET` | Generate any random string yourself, e.g. run `openssl rand -hex 24` locally and paste the output. This is what authorizes Vercel's own Cron Jobs to call your scheduler endpoint; Vercel automatically sends it as a Bearer token when this variable is set. |
+| `SESSION_SECRET` | Copy from `server/.env` — this signs the login session cookie. It must be the **same value** locally and on Vercel, or sessions created on one won't validate on the other. Changing it later logs everyone out. |
 
 Do **not** set `PORT` — Vercel manages that itself.
+
+The dashboard is gated behind a login (two accounts: Owner and Admin). If
+you haven't already, run `node server/seedUsers.js` once locally (after the
+`users` table exists — see `SUPABASE-SETUP.md`) to create both accounts in
+Supabase; since Vercel and your local server share the same Supabase
+project, this seeding only needs to happen once, not separately per
+environment.
 
 ## Step 4 — Deploy
 

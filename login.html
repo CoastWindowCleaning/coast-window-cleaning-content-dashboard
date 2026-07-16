@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Log In — Coast Window Cleaning</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F5FBFD; --bg-elev:#FFFFFF; --border:#D8E9F0; --text:#152736; --text-dim:#4F6575;
+  --accent:#0C3A52; --accent-dim:#082A3D; --radius:14px; --radius-sm:8px; --red:#DC493E;
+  --shadow:0 2px 16px rgba(21,60,87,0.08);
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#0A2036; --bg-elev:#0F2D45; --border:#22516F; --text:#EEF7FB; --text-dim:#A9C4D4;
+    --accent:#4A9BD1; --accent-dim:#6FB2DE; --red:#FF7A70; --shadow:0 4px 24px rgba(0,0,0,0.35);
+  }
+}
+*{box-sizing:border-box;}
+body{
+  margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;
+  background:var(--bg);color:var(--text);
+  font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+}
+.card{background:var(--bg-elev);border:1px solid var(--border);border-radius:var(--radius);padding:32px;width:100%;max-width:360px;box-shadow:var(--shadow);}
+.brand{display:flex;align-items:center;gap:10px;margin-bottom:24px;}
+.brand-logo{width:40px;height:40px;border-radius:50%;overflow:hidden;background:linear-gradient(135deg,var(--accent),var(--accent-dim));flex-shrink:0;}
+.brand-logo img{width:100%;height:100%;object-fit:cover;}
+.brand h1{font-size:15px;margin:0;font-weight:700;letter-spacing:-0.01em;}
+label{display:block;font-size:12px;color:var(--text-dim);margin-bottom:5px;font-weight:550;}
+input{
+  width:100%;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);
+  color:var(--text);padding:10px 12px;font-size:13.5px;font-family:inherit;margin-bottom:16px;
+}
+input:focus{outline:none;border-color:var(--accent);}
+button{
+  width:100%;background:var(--accent);border:1px solid var(--accent);color:#fff;
+  padding:11px;border-radius:var(--radius-sm);font-size:14px;font-weight:600;cursor:pointer;
+}
+button:hover{background:var(--accent-dim);}
+button:disabled{opacity:0.6;cursor:not-allowed;}
+.error{color:var(--red);font-size:12.5px;margin-bottom:12px;min-height:16px;}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="brand">
+    <div class="brand-logo"><img src="logo.png" alt="" onerror="this.style.display='none';"/></div>
+    <h1>Coast Window Cleaning</h1>
+  </div>
+  <form id="loginForm">
+    <div class="error" id="loginError"></div>
+    <label for="email">Email</label>
+    <input type="email" id="email" required autocomplete="username"/>
+    <label for="password">Password</label>
+    <input type="password" id="password" required autocomplete="current-password"/>
+    <button type="submit" id="loginBtn">Log In</button>
+  </form>
+</div>
+<script>
+document.getElementById('loginForm').addEventListener('submit', async function(e){
+  e.preventDefault();
+  var btn = document.getElementById('loginBtn');
+  var errEl = document.getElementById('loginError');
+  errEl.textContent = '';
+  btn.disabled = true; btn.textContent = 'Logging in…';
+  try{
+    var resp = await fetch('/api/auth/login', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        email: document.getElementById('email').value,
+        password: document.getElementById('password').value
+      })
+    });
+    var json = await resp.json();
+    if(!resp.ok) throw new Error(json.error || 'Login failed');
+    window.location.href = json.mustChangePassword ? '/change-password.html' : '/';
+  }catch(err){
+    errEl.textContent = err.message;
+    btn.disabled = false; btn.textContent = 'Log In';
+  }
+});
+</script>
+</body>
+</html>

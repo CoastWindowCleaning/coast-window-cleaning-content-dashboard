@@ -38,8 +38,20 @@ create table if not exists scheduled_reels (
 create index if not exists scheduled_reels_due_idx
   on scheduled_reels (status, scheduled_for);
 
+-- Dashboard login accounts. Exactly two seeded via server/seedUsers.js --
+-- never insert plaintext passwords here, only bcrypt hashes.
+create table if not exists users (
+  id bigint generated always as identity primary key,
+  email text not null unique,
+  password_hash text not null,
+  role text not null check (role in ('owner','admin')),
+  must_change_password boolean not null default true,
+  created_at timestamptz not null default now()
+);
+
 -- Row Level Security: locked down. This server only ever connects with the
 -- service_role key (which bypasses RLS by design), never the anon/public key,
 -- so these tables should never be reachable directly from a browser.
 alter table dashboard_state enable row level security;
 alter table scheduled_reels enable row level security;
+alter table users enable row level security;

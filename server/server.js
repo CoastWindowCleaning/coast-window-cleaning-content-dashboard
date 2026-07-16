@@ -11,6 +11,8 @@ const scheduler = require('./scheduler');
 const reports = require('./reports');
 const captionAgent = require('./captionAgent');
 const frameExtract = require('./frameExtract');
+const commentSummary = require('./commentSummary');
+const auth = require('./auth');
 
 const PORT = process.env.PORT || 3001;
 const MONTHLY_CAP_USD = Number(process.env.MONTHLY_CAP_USD || 15);
@@ -30,7 +32,77 @@ const app = express();
 app.use(express.json({ limit: '5mb' }));
 
 const projectRoot = path.join(__dirname, '..');
-app.use(express.static(projectRoot));
+
+// Only ever serve this one known-safe static asset by name -- NOT a blanket
+// express.static(projectRoot), which would also happily serve server/*.js
+// source and server/data-store.json (real business data) to anyone who
+// requested that path. Login/change-password/index are all explicitly
+// gated routes below, not plain static files.
+app.get('/logo.png', (req, res) => res.sendFile(path.join(projectRoot, 'logo.png')));
+
+app.get('/login.html', (req, res) => res.sendFile(path.join(projectRoot, 'login.html')));
+app.get('/change-password.html', (req, res) => {
+  if (!auth.getSession(req)) return res.redirect('/login.html');
+  res.sendFile(path.join(projectRoot, 'change-password.html'));
+});
+app.get(['/', '/index.html'], auth.requireAuthPage, (req, res) => {
+  res.sendFile(path.join(projectRoot, 'index.html'));
+});
+
+// --- Auth API (the only /api/* routes reachable without a session) ---
+app.post('/api/auth/login', async (req, res) => {
+  const { email, password } = req.body || {};
+  if (!email || !password) return res.status(400).json({ error: 'Email and password are required.' });
+  try {
+    const user = await auth.verifyLogin(email, password);
+    if (!user) return res.status(401).json({ error: 'Invalid email or password.' });
+    auth.setSessionCookie(res, { uid: user.id, email: user.email, role: user.role, mustChangePassword: !!user.must_change_password });
+    res.json({ ok: true, mustChangePassword: !!user.must_change_password, role: user.role, email: user.email });
+  } catch (err) {
+    res.status(502).json({ error: err.message });
+  }
+});
+
+app.post('/api/auth/logout', (req, res) => {
+  auth.clearSessionCookie(res);
+  res.json({ ok: true });
+});
+
+app.get('/api/auth/me', (req, res) => {
+  const session = auth.getSession(req);
+  if (!session) return res.json({ authenticated: false });
+  res.json({ authenticated: true, email: session.email, role: session.role, mustChangePassword: !!session.mustChangePassword });
+});
+
+app.post('/api/auth/change-password', (req, res, next) => {
+  const session = auth.getSession(req);
+  if (!session) return res.status(401).json({ error: 'Not authenticated.' });
+  req.session = session;
+  next();
+}, async (req, res) => {
+  const { newPassword } = req.body || {};
+  if (!newPassword || newPassword.length < 8) return res.status(400).json({ error: 'New password must be at least 8 characters.' });
+  try {
+    const hash = await auth.hashPassword(newPassword);
+    await auth.updateUserPassword(req.session.uid, hash);
+    auth.setSessionCookie(res, { uid: req.session.uid, email: req.session.email, role: req.session.role, mustChangePassword: false });
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(502).json({ error: err.message });
+  }
+});
+
+// Every other /api/* route requires a valid, fully-active session --
+// /api/cron/* is exempt because it authenticates separately via CRON_SECRET
+// (server-to-server, no browser session exists for Vercel's own cron caller).
+app.use('/api', (req, res, next) => {
+  if (req.path.startsWith('/auth/') || req.path.startsWith('/cron/')) return next();
+  const session = auth.getSession(req);
+  if (!session) return res.status(401).json({ error: 'Not authenticated.' });
+  if (session.mustChangePassword) return res.status(403).json({ error: 'Password change required before continuing.' });
+  req.session = session;
+  next();
+});
 
 app.get('/api/health', (req, res) => {
   res.json({
@@ -180,33 +252,36 @@ app.get('/api/instagram/sync', async (req, res) => {
   }
 });
 
-app.get('/api/instagram/sentiment/:mediaId', async (req, res) => {
+app.get('/api/instagram/comment-summary/:mediaId', async (req, res) => {
   if (!instagram.igConfigured()) {
     return res.status(400).json({ error: 'Instagram not configured — see INSTAGRAM-SETUP.md' });
   }
   if (!aiClient.getClient()) {
-    return res.status(400).json({ error: 'ANTHROPIC_API_KEY is not set — sentiment analysis needs the Claude API backend configured (see AI-AGENT-SETUP.md).' });
+    return res.status(400).json({ error: 'ANTHROPIC_API_KEY is not set — comment analysis needs the Claude API backend configured (see AI-AGENT-SETUP.md).' });
   }
   try {
-    const comments = await instagram.getComments(req.params.mediaId, 30);
+    const comments = await instagram.getComments(req.params.mediaId, 50);
     if (!comments.length) {
-      return res.json({ sentiment: 'neutral', summary: 'No comments to analyze yet.', costUsd: 0 });
+      return res.json({ hasComments: false, fingerprint: null, reception: 'neutral', reason: 'No comments yet.', themes: [], unansweredQuestions: [], complaints: [], commentCount: 0, costUsd: 0 });
     }
-    const commentText = comments.map((c) => '- ' + c.text).join('\n');
-    const prompt = 'Classify the overall sentiment of these Instagram comments on a window cleaning business\'s reel as exactly one word: positive, mixed, negative, or neutral. Then give a one-sentence summary of what commenters are saying.\n\nReturn exactly this format:\nSENTIMENT: <word>\nSUMMARY: <one sentence>\n\nComments:\n' + commentText;
 
-    const result = await aiClient.runPrompt(AGENT_MODEL.dm, prompt, { maxTokens: 300 });
-    const sentimentMatch = result.text.match(/SENTIMENT:\s*(\w+)/i);
-    const summaryMatch = result.text.match(/SUMMARY:\s*(.+)/i);
+    const fingerprint = commentSummary.fingerprintComments(comments);
+    if (req.query.knownFingerprint && req.query.knownFingerprint === fingerprint) {
+      // Nothing has changed since the last analysis -- skip the AI call entirely.
+      return res.json({ hasComments: true, unchanged: true, fingerprint, costUsd: 0 });
+    }
 
-    res.json({
-      sentiment: sentimentMatch ? sentimentMatch[1].toLowerCase() : 'neutral',
-      summary: summaryMatch ? summaryMatch[1].trim() : result.text.trim(),
-      costUsd: result.costUsd
-    });
+    const prompt = commentSummary.buildCommentSummaryPrompt(comments);
+    const result = await aiClient.runPrompt(AGENT_MODEL.dm, prompt, { maxTokens: 800 });
+    const parsed = commentSummary.parseCommentSummaryResponse(result.text);
+
+    res.json(Object.assign(
+      { hasComments: true, unchanged: false, fingerprint, commentCount: comments.length, costUsd: result.costUsd },
+      parsed
+    ));
   } catch (err) {
-    console.error('Sentiment analysis error:', err.message);
-    res.status(502).json({ error: (err && err.message) || 'Could not analyze comment sentiment.' });
+    console.error('Comment summary error:', err.message);
+    res.status(502).json({ error: (err && err.message) || 'Could not analyze comments.' });
   }
 });
 
@@ -343,10 +418,6 @@ async function handleCronRun(req, res) {
 }
 app.get('/api/cron/run-scheduler', handleCronRun);
 app.post('/api/cron/run-scheduler', handleCronRun);
-
-app.get('/', (req, res) => {
-  res.sendFile(path.join(projectRoot, 'index.html'));
-});
 
 app.use((err, req, res, next) => {
   console.error('Unexpected server error:', err);
