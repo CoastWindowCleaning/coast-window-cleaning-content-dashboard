@@ -1,0 +1,2458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Coast Window Cleaning — Content Dashboard</title>
+<script>
+(function(){
+  try{
+    var raw = localStorage.getItem('cwc_dashboard_data_v1');
+    var theme = 'light';
+    if(raw){
+      var parsed = JSON.parse(raw);
+      if(parsed && parsed.settings && parsed.settings.theme) theme = parsed.settings.theme;
+    }
+    document.documentElement.setAttribute('data-theme', theme);
+  }catch(e){
+    document.documentElement.setAttribute('data-theme','light');
+  }
+})();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js" onerror="window.__CHART_FAILED__=true"></script>
+<style>
+:root, :root[data-theme="light"]{
+  --bg:#F5FBFD;
+  --bg-elev:#FFFFFF;
+  --bg-elev-2:#EEF7FB;
+  --bg-elev-3:#E1F0F6;
+  --border:#D8E9F0;
+  --border-soft:#E6F2F7;
+  --text:#152736;
+  --text-dim:#4F6575;
+  --text-faint:#8398A6;
+  --accent:#0C3A52;
+  --accent-dim:#082A3D;
+  --accent-soft:rgba(12,58,82,0.08);
+  --navy:#0C3A52;
+  --green:#1CA579;
+  --red:#DC493E;
+  --amber:#C97F13;
+  --amber-soft-bg:rgba(201,127,19,0.08);
+  --amber-soft-border:rgba(201,127,19,0.25);
+  --red-soft:rgba(220,73,62,0.08);
+  --green-soft:rgba(28,165,121,0.10);
+  --modal-scrim:rgba(5,6,10,0.65);
+  --gold:#E0A415;
+  --radius:14px;
+  --radius-sm:8px;
+  --shadow:0 2px 16px rgba(21,60,87,0.08);
+}
+:root[data-theme="dark"]{
+  --bg:#0A2036;
+  --bg-elev:#0F2D45;
+  --bg-elev-2:#163C57;
+  --bg-elev-3:#1C4A6B;
+  --border:#22516F;
+  --border-soft:#193F58;
+  --text:#EEF7FB;
+  --text-dim:#A9C4D4;
+  --text-faint:#7093AA;
+  --accent:#4A9BD1;
+  --accent-dim:#6FB2DE;
+  --accent-soft:rgba(74,155,209,0.18);
+  --navy:#0C3A52;
+  --green:#3EDBA3;
+  --red:#FF7A70;
+  --amber:#F5B942;
+  --amber-soft-bg:rgba(245,185,66,0.1);
+  --amber-soft-border:rgba(245,185,66,0.3);
+  --red-soft:rgba(255,122,112,0.12);
+  --modal-scrim:rgba(0,0,0,0.72);
+  --gold:#FFC535;
+  --radius:14px;
+  --radius-sm:8px;
+  --shadow:0 4px 24px rgba(0,0,0,0.35);
+}
+*{box-sizing:border-box;}
+.ic{vertical-align:-3px;flex-shrink:0;}
+html,body{margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+  transition:background .2s,color .2s;
+}
+a{color:var(--accent);}
+.app-shell{display:flex;min-height:100vh;align-items:stretch;}
+.sidebar{
+  width:236px;flex-shrink:0;background:var(--bg-elev);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;padding:20px 14px;position:sticky;top:0;height:100vh;overflow-y:auto;
+}
+.sidebar-brand{display:flex;align-items:center;gap:10px;margin-bottom:26px;padding:0 6px;}
+.sidebar-nav{display:flex;flex-direction:column;gap:3px;}
+.sidebar-nav-item{
+  display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;
+  background:none;border:none;color:var(--text-dim);font-size:13.5px;font-weight:600;
+  cursor:pointer;text-align:left;width:100%;transition:background .15s,color .15s;
+}
+.sidebar-nav-item .nav-icon{display:inline-flex;align-items:center;}
+.sidebar-nav-item .nav-icon .ic{vertical-align:middle;}
+.sidebar-nav-item:hover{background:var(--accent-soft);color:var(--text);}
+.sidebar-nav-item.active{background:var(--accent);color:#fff;}
+.main-area{flex:1;min-width:0;display:flex;flex-direction:column;}
+.topbar{
+  display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;
+  padding:16px 28px;border-bottom:1px solid var(--border);background:var(--bg-elev);
+  position:sticky;top:0;z-index:10;
+}
+.topbar-title{font-size:18px;font-weight:700;letter-spacing:-0.01em;color:var(--text);}
+.brand{display:flex;align-items:center;gap:12px;}
+.brand-logo{
+  width:42px;height:42px;border-radius:50%;
+  background:linear-gradient(135deg,var(--accent),var(--navy));
+  display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;
+  overflow:hidden;position:relative;
+}
+.brand-logo img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
+.brand-logo .fallback{display:none;width:100%;height:100%;align-items:center;justify-content:center;}
+.brand-text h1{font-size:16px;margin:0;font-weight:700;letter-spacing:-0.01em;color:var(--text);}
+.brand-text .handle{font-size:12px;color:var(--text-dim);}
+.topbar-actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+.page-content{padding:24px 28px;max-width:1180px;width:100%;}
+.page{display:none;}
+.page.active{display:block;}
+
+.theme-toggle{
+  background:var(--bg-elev-2);border:1px solid var(--border);color:var(--text);
+  width:36px;height:36px;border-radius:50%;cursor:pointer;font-size:15px;
+  display:inline-flex;align-items:center;justify-content:center;transition:background .15s,border-color .15s;
+}
+.theme-toggle:hover{background:var(--bg-elev-3);border-color:var(--accent);}
+
+.btn{
+  appearance:none;border:1px solid var(--border);background:var(--bg-elev-2);
+  color:var(--text);padding:9px 14px;border-radius:var(--radius-sm);font-size:13px;
+  cursor:pointer;font-weight:550;display:inline-flex;align-items:center;gap:6px;
+  transition:background .15s,border-color .15s,transform .05s;white-space:nowrap;
+}
+.btn:hover{background:var(--bg-elev-3);border-color:var(--accent);}
+.btn:active{transform:scale(0.98);}
+.btn-primary{background:var(--accent);border-color:var(--accent);color:#fff;}
+.btn-primary:hover{background:var(--accent-dim);border-color:var(--accent-dim);}
+.btn-danger{color:var(--red);}
+.btn-danger:hover{border-color:var(--red);background:var(--red-soft);}
+.btn-sm{padding:6px 10px;font-size:12px;}
+.btn-block{width:100%;justify-content:center;}
+.btn:disabled{opacity:0.5;cursor:not-allowed;}
+
+.section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;}
+.section-head h2{font-size:15px;margin:0;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-dim);font-weight:650;}
+.section-head .sub{font-size:12.5px;color:var(--text-faint);}
+
+/* Section A - stats */
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;}
+.stat-card{
+  background:var(--bg-elev);border:1px solid var(--border);border-radius:var(--radius);
+  padding:16px 18px;
+}
+.stat-label{font-size:12px;color:var(--text-dim);margin-bottom:8px;font-weight:550;}
+.stat-value{font-size:24px;font-weight:700;letter-spacing:-0.02em;}
+.stat-value.small{font-size:15px;font-weight:600;line-height:1.3;}
+.stat-sub{font-size:12px;color:var(--text-faint);margin-top:4px;}
+.trend-up{color:var(--green);}
+.trend-down{color:var(--red);}
+
+/* Panels */
+.panel{background:var(--bg-elev);border:1px solid var(--border);border-radius:var(--radius);padding:20px;}
+.chart-wrap{position:relative;height:320px;margin-bottom:16px;}
+.chart-fallback-msg{
+  background:var(--amber-soft-bg);border:1px solid var(--amber-soft-border);color:var(--amber);
+  padding:10px 14px;border-radius:var(--radius-sm);font-size:12.5px;margin-bottom:16px;
+}
+#reelDetail{margin-top:14px;}
+.detail-card{background:var(--bg-elev-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px 16px;}
+.detail-card .cap{font-weight:600;margin-bottom:6px;}
+.detail-stats{display:flex;gap:16px;font-size:12.5px;color:var(--text-dim);flex-wrap:wrap;}
+
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--border-soft);}
+th{color:var(--text-faint);font-weight:600;font-size:11.5px;text-transform:uppercase;letter-spacing:0.04em;}
+tr:last-child td{border-bottom:none;}
+.table-wrap{overflow-x:auto;}
+td.num{text-align:right;font-variant-numeric:tabular-nums;}
+th.num{text-align:right;}
+.row-actions{display:flex;gap:6px;justify-content:flex-end;}
+.icon-btn{
+  background:none;border:1px solid var(--border);color:var(--text-dim);border-radius:6px;
+  padding:4px 7px;cursor:pointer;font-size:12px;
+}
+.icon-btn:hover{color:var(--text);border-color:var(--accent);}
+.truncate{max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+
+.panel-toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px;}
+
+/* Competitors */
+.competitor-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;margin-bottom:20px;}
+.competitor-card{background:var(--bg-elev-2);border:1px solid var(--border);border-radius:var(--radius);padding:16px;}
+.competitor-card h3{margin:0 0 2px;font-size:15px;}
+.competitor-card .handle{font-size:12.5px;color:var(--text-dim);margin-bottom:10px;}
+.competitor-meta{display:flex;justify-content:space-between;align-items:center;font-size:12.5px;color:var(--text-dim);margin-bottom:10px;}
+.post-mini{background:var(--bg-elev-3);border-radius:8px;padding:8px 10px;margin-bottom:8px;font-size:12px;}
+.post-mini .pv{color:var(--text-dim);}
+.leaderboard-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;font-size:13px;}
+.leaderboard-bar-bg{flex:1;height:8px;background:var(--bg-elev-3);border-radius:4px;overflow:hidden;}
+.leaderboard-bar{height:100%;background:var(--accent);}
+.leaderboard-bar.me{background:var(--green);}
+
+/* Morning brief */
+.brief-card{background:var(--bg-elev-2);border:1px solid var(--border);border-radius:var(--radius);padding:20px;}
+.brief-block{margin-bottom:16px;}
+.brief-block h4{margin:0 0 6px;font-size:13px;color:var(--accent);}
+.brief-block p{margin:0;font-size:13.5px;color:var(--text);white-space:pre-wrap;}
+.empty-note{color:var(--text-faint);font-style:italic;}
+
+/* Modal */
+.modal-overlay{
+  position:fixed;inset:0;background:var(--modal-scrim,rgba(5,6,10,0.65));display:flex;align-items:center;justify-content:center;
+  z-index:200;padding:20px;backdrop-filter:blur(2px);
+}
+.modal{
+  background:var(--bg-elev);border:1px solid var(--border);border-radius:var(--radius);
+  width:100%;max-width:560px;max-height:88vh;overflow-y:auto;box-shadow:var(--shadow);
+}
+.modal-wide{max-width:720px;}
+.modal-header{
+  display:flex;align-items:center;justify-content:space-between;padding:18px 20px;
+  border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg-elev);z-index:2;
+}
+.modal-title{font-weight:650;font-size:16px;}
+.modal-close{background:none;border:none;color:var(--text-dim);font-size:18px;cursor:pointer;padding:4px 8px;}
+.modal-close:hover{color:var(--text);}
+.modal-body{padding:20px;}
+.modal-desc{color:var(--text-dim);font-size:13.5px;margin-top:0;}
+.label{font-size:12px;font-weight:650;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.04em;}
+.prompt-label-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+.prompt-box{
+  background:var(--bg-elev-3);border:1px solid var(--border);border-radius:var(--radius-sm);
+  padding:14px;font-size:12.5px;white-space:pre-wrap;word-wrap:break-word;max-height:280px;overflow-y:auto;
+  font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--text-dim);margin:0;
+}
+
+.backlog-add-row{display:flex;gap:8px;margin-top:8px;}
+
+/* Forms */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.form-grid .full{grid-column:1/-1;}
+.field label{display:block;font-size:12px;color:var(--text-dim);margin-bottom:5px;font-weight:550;}
+.field input,.field textarea{
+  width:100%;background:var(--bg-elev-2);border:1px solid var(--border);border-radius:var(--radius-sm);
+  color:var(--text);padding:9px 11px;font-size:13.5px;font-family:inherit;
+}
+.field input:focus,.field textarea:focus{outline:none;border-color:var(--accent);}
+.form-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:18px;}
+
+/* Toast */
+#toast{
+  position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);
+  background:var(--bg-elev-3);border:1px solid var(--border);color:var(--text);
+  padding:10px 18px;border-radius:30px;font-size:13px;box-shadow:var(--shadow);
+  opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:300;
+}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+.footer-note{text-align:center;color:var(--text-faint);font-size:12px;margin-top:40px;}
+
+/* Agents chat page */
+.agents-layout{display:grid;grid-template-columns:220px 260px 1fr;gap:16px;align-items:start;}
+.agent-list{display:flex;flex-direction:column;gap:6px;}
+.agent-list-item{
+  display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;
+  background:var(--bg-elev);border:1px solid var(--border);cursor:pointer;text-align:left;width:100%;
+  transition:border-color .15s;
+}
+.agent-list-item:hover{border-color:var(--accent);}
+.agent-list-item.active{border-color:var(--accent);background:var(--accent-soft);}
+.agent-list-item .icon{font-size:18px;}
+.agent-list-item .name{font-weight:650;font-size:13px;}
+.agent-list-item .status-dot-sm{width:6px;height:6px;border-radius:50%;background:var(--text-faint);margin-left:auto;flex-shrink:0;}
+.agent-list-item.has-output .status-dot-sm{background:var(--green);}
+
+.ideas-panel{background:var(--bg-elev);border:1px solid var(--border);border-radius:var(--radius);padding:14px;max-height:clamp(280px, calc(100vh - 200px), 900px);overflow-y:auto;}
+.ideas-panel h3{font-size:12px;text-transform:uppercase;letter-spacing:0.04em;color:var(--text-dim);margin:0 0 10px;}
+.idea-chip{
+  background:var(--bg-elev-2);border-radius:8px;padding:8px 10px;margin-bottom:6px;font-size:12px;
+  transition:background .15s;
+}
+.idea-chip:hover{background:var(--accent-soft);}
+.idea-chip.stage-scrapped{opacity:0.5;text-decoration:line-through;}
+.idea-chip.stage-launched .idea-chip-text{opacity:0.75;}
+.idea-chip-text{cursor:pointer;margin-bottom:7px;}
+.idea-chip-row{display:flex;align-items:center;gap:6px;}
+.stage-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.idea-chip-row select{
+  flex:1;min-width:0;background:var(--bg-elev);border:1px solid var(--border);border-radius:6px;
+  color:var(--text);font-size:11px;padding:3px 4px;font-family:inherit;
+}
+.idea-chip-row select:focus{outline:none;border-color:var(--accent);}
+.idea-chip-del{background:none;border:none;color:var(--text-faint);cursor:pointer;padding:2px 4px;display:inline-flex;flex-shrink:0;}
+.idea-chip-del:hover{color:var(--red);}
+
+.chat-panel{background:var(--bg-elev);border:1px solid var(--border);border-radius:var(--radius);display:flex;flex-direction:column;height:clamp(420px, calc(100vh - 200px), 900px);}
+.chat-header{padding:16px 18px;border-bottom:1px solid var(--border);display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-start;gap:10px;}
+.chat-header-info{flex:1;min-width:180px;}
+.chat-header-actions{display:flex;gap:8px;flex-wrap:wrap;}
+.chat-header .title{font-weight:700;font-size:15px;}
+.chat-header .desc{font-size:12px;color:var(--text-dim);margin-top:4px;max-width:520px;}
+.chat-messages{flex:1;overflow-y:auto;padding:18px;display:flex;flex-direction:column;gap:14px;}
+.chat-bubble{padding:11px 14px;border-radius:14px;font-size:13.5px;line-height:1.5;white-space:pre-wrap;word-break:break-word;overflow-wrap:break-word;}
+.chat-bubble.user{background:var(--accent);color:#fff;border-bottom-right-radius:4px;}
+.chat-bubble.assistant{background:var(--bg-elev-2);color:var(--text);border-bottom-left-radius:4px;white-space:normal;}
+.chat-bubble.typing{background:var(--bg-elev-2);padding:14px 16px;}
+.chat-md-heading{font-weight:700;margin:10px 0 4px;}
+.chat-md-heading:first-child{margin-top:0;}
+.chat-md-line{margin:2px 0;}
+.chat-md-line:first-child{margin-top:0;}
+.chat-md-list{margin:4px 0 4px 18px;padding:0;}
+.chat-md-list li{margin:2px 0;}
+.chat-md-spacer{height:8px;}
+.chat-md-spacer:first-child,.chat-md-spacer:last-child{display:none;}
+.chat-md-rule{border:none;border-top:1px solid var(--border);margin:10px 0;}
+.chat-empty{color:var(--text-faint);font-size:13px;text-align:center;margin:auto;padding:20px;}
+.chat-input-row{display:flex;gap:8px;padding:14px 16px;border-top:1px solid var(--border);align-items:flex-end;}
+.chat-input-row textarea{
+  flex:1;resize:none;background:var(--bg-elev-2);border:1px solid var(--border);border-radius:10px;
+  color:var(--text);padding:10px 12px;font-size:13.5px;font-family:inherit;min-height:44px;max-height:120px;
+}
+.chat-input-row textarea:focus{outline:none;border-color:var(--accent);}
+@media (max-width:960px){
+  .agents-layout{grid-template-columns:1fr;}
+  .chat-panel{height:clamp(360px, 60vh, 700px);}
+}
+
+@media (max-width:860px){
+  .app-shell{flex-direction:column;}
+  .sidebar{
+    width:100%;height:auto;position:static;flex-direction:row;align-items:center;
+    padding:10px 12px;overflow-x:auto;gap:14px;
+  }
+  .sidebar-brand{margin-bottom:0;flex-shrink:0;}
+  .sidebar-nav{flex-direction:row;flex-shrink:0;}
+  .sidebar-nav-item{white-space:nowrap;}
+  .page-content{padding:18px 16px;}
+}
+@media (max-width:640px){
+  .form-grid{grid-template-columns:1fr;}
+  .stat-value{font-size:20px;}
+  .topbar{flex-direction:column;align-items:flex-start;}
+}
+
+/* === Fix 2: Page fade-in transition === */
+.page.active{animation:pageIn 0.18s ease both;}
+@keyframes pageIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+
+/* === Fix 4c: Typing indicator dots === */
+.typing-dots{display:inline-flex;gap:3px;}
+.typing-dots span{width:6px;height:6px;border-radius:50%;background:var(--text-faint);animation:dotBounce 1.2s infinite;}
+.typing-dots span:nth-child(2){animation-delay:.2s;}
+.typing-dots span:nth-child(3){animation-delay:.4s;}
+@keyframes dotBounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-6px)}}
+
+/* === Fix 4a/b: Chat timestamps + cost badge === */
+.chat-msg-wrap{display:flex;flex-direction:column;max-width:80%;}
+.chat-msg-wrap.user{align-self:flex-end;align-items:flex-end;}
+.chat-msg-wrap.assistant{align-self:flex-start;align-items:flex-start;}
+.chat-ts{font-size:10.5px;color:var(--text-faint);margin-top:3px;padding:0 2px;}
+.chat-cost{font-size:10.5px;color:var(--text-faint);margin-top:1px;padding:0 2px;font-variant-numeric:tabular-nums;}
+
+/* === Fix 4d: Chat word-wrap === */
+.chat-bubble{max-width:100%;padding:11px 14px;border-radius:14px;font-size:13.5px;line-height:1.5;white-space:pre-wrap;word-break:break-word;overflow-wrap:break-word;}
+
+/* === Fix 7: Select styling in forms === */
+.field select{
+  width:100%;background:var(--bg-elev-2);border:1px solid var(--border);border-radius:var(--radius-sm);
+  color:var(--text);padding:9px 11px;font-size:13.5px;font-family:inherit;
+  appearance:auto;
+}
+.field select:focus{outline:none;border-color:var(--accent);}
+
+/* === Fix 12: Status badge pills === */
+.status-badge{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;padding:4px 10px;border-radius:20px;background:var(--bg-elev-2);border:1px solid var(--border);color:var(--text-faint);}
+.status-badge .dot{width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0;}
+.status-badge.connected{color:var(--green);}
+.status-badge.running{color:var(--amber);}
+
+/* === Fix 14: Focus ring accessibility === */
+button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{
+  outline:2px solid var(--accent);
+  outline-offset:2px;
+}
+
+/* === Fix 6: Sidebar footer === */
+.sidebar-footer{margin-top:auto;padding-top:14px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:8px;}
+.sidebar-spend{font-size:11.5px;font-weight:600;padding:5px 8px;border-radius:8px;}
+.sidebar-spend.low{color:var(--green);background:var(--accent-soft);}
+.sidebar-spend.mid{color:var(--amber);background:var(--amber-soft-bg);}
+.sidebar-spend.high{color:var(--red);background:var(--red-soft);}
+.sidebar-brief-btn{display:flex;align-items:center;gap:6px;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg-elev-2);color:var(--text-dim);font-size:12px;font-weight:600;cursor:pointer;width:100%;text-align:left;transition:background .15s,border-color .15s;}
+.sidebar-brief-btn:hover{background:var(--accent-soft);border-color:var(--accent);color:var(--text);}
+
+/* === Fix 9: Agent layout at narrow widths === */
+@media (max-width:860px){
+  .agents-layout{grid-template-columns:1fr;}
+  .agent-list{display:flex;flex-direction:row;flex-wrap:wrap;gap:6px;}
+  .agent-list-item{width:auto;flex:none;}
+  .chat-panel{height:clamp(320px, 50vh, 600px);}
+}
+</style>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-logo">
+        <img src="logo.png" alt="" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"/>
+        <div class="fallback">
+          <svg viewBox="0 0 40 40" width="24" height="24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M20 32 L20 19" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/>
+            <path d="M20 21 C14 17 10 19 7 15 C12 14 17 16 20 19" fill="#fff"/>
+            <path d="M20 21 C26 17 30 19 33 15 C28 14 23 16 20 19" fill="#fff"/>
+            <path d="M20 21 C16 15 14 11 11 9 C15 11 18 15 20 19" fill="#fff"/>
+            <path d="M20 21 C24 15 26 11 29 9 C25 11 22 15 20 19" fill="#fff"/>
+            <path d="M20 21 C19 13 20 9 20 7 C21 11 20 15 20 19" fill="#fff"/>
+          </svg>
+        </div>
+      </div>
+      <div class="brand-text">
+        <h1 id="bizNameDisplay">Coast Window Cleaning</h1>
+        <div class="handle" id="bizHandleDisplay">@CHANGE_ME</div>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <button class="sidebar-nav-item active" data-page="overview" onclick="showPage('overview')"><span class="nav-icon"><svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="12" width="4" height="9" rx="1"/><rect x="10" y="7" width="4" height="14" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/></svg></span> Overview</button>
+      <button class="sidebar-nav-item" data-page="growth" onclick="showPage('growth')"><span class="nav-icon"><svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 16"/><polyline points="16 7 22 7 22 13"/></svg></span> Growth</button>
+      <button class="sidebar-nav-item" data-page="reels" onclick="showPage('reels')"><span class="nav-icon"><svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg></span> Reels</button>
+      <button class="sidebar-nav-item" data-page="agents" onclick="showPage('agents')"><span class="nav-icon"><svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="1" y1="15" x2="4" y2="15"/><line x1="20" y1="15" x2="23" y2="15"/></svg></span> Agents</button>
+      <button class="sidebar-nav-item" data-page="competitors" onclick="showPage('competitors')"><span class="nav-icon"><svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><polyline points="8.5 13.5 7 22 12 19 17 22 15.5 13.5"/></svg></span> Competitors</button>
+    </nav>
+    <div class="sidebar-footer" id="sidebarFooter">
+      <div id="sidebarSpend" class="sidebar-spend low">AI: $0.00 this month</div>
+      <button class="sidebar-brief-btn" onclick="openMorningBriefModal()"><svg class="ic" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.5"/><line x1="12" y1="1.5" x2="12" y2="3.5"/><line x1="12" y1="20.5" x2="12" y2="22.5"/><line x1="4.2" y1="4.2" x2="5.6" y2="5.6"/><line x1="18.4" y1="18.4" x2="19.8" y2="19.8"/><line x1="1.5" y1="12" x2="3.5" y2="12"/><line x1="20.5" y1="12" x2="22.5" y2="12"/><line x1="4.2" y1="19.8" x2="5.6" y2="18.4"/><line x1="18.4" y1="5.6" x2="19.8" y2="4.2"/></svg> Morning Brief</button>
+    </div>
+  </aside>
+
+  <div class="main-area">
+    <div class="topbar">
+      <div class="topbar-title" id="pageTitle">Overview</div>
+      <div class="topbar-actions">
+        <span id="backendBadge" class="status-badge"><span class="dot"></span> Checking AI…</span>
+        <span id="instagramBadge" class="status-badge"><span class="dot"></span> Checking Instagram…</span>
+        <button class="theme-toggle" id="themeToggleBtn" onclick="toggleTheme()" title="Switch theme"></button>
+        <button class="btn" onclick="openSettingsModal()"><svg class="ic" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/><circle cx="12" cy="12" r="3"/></svg> Settings</button>
+        <button class="btn btn-primary" onclick="openMorningBriefModal()"><svg class="ic" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.5"/><line x1="12" y1="1.5" x2="12" y2="3.5"/><line x1="12" y1="20.5" x2="12" y2="22.5"/><line x1="4.2" y1="4.2" x2="5.6" y2="5.6"/><line x1="18.4" y1="18.4" x2="19.8" y2="19.8"/><line x1="1.5" y1="12" x2="3.5" y2="12"/><line x1="20.5" y1="12" x2="22.5" y2="12"/><line x1="4.2" y1="19.8" x2="5.6" y2="18.4"/><line x1="18.4" y1="5.6" x2="19.8" y2="4.2"/></svg> Generate Morning Brief</button>
+      </div>
+    </div>
+
+    <div class="page-content">
+
+      <!-- PAGE: Overview -->
+      <div class="page active" id="page-overview">
+        <div class="section-head"><h2>Analytics — Last 12 Reels</h2></div>
+        <div class="stat-grid" id="statGrid" style="margin-bottom:18px;"></div>
+        <div class="section-head">
+          <h2>Instagram Insights</h2>
+          <button class="btn btn-sm" onclick="syncFromInstagram(this)"><svg class="ic" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg> Sync from Instagram</button>
+        </div>
+        <div class="stat-grid" id="igStatGrid"></div>
+        <div class="panel" id="igTrendPanel" style="margin-top:16px;display:none;">
+          <div class="section-head" style="margin-bottom:10px;"><h2>Reach, Saves &amp; Watch Time — Last 12 Reels</h2></div>
+          <div class="chart-wrap" style="height:260px;"><canvas id="igTrendChart"></canvas></div>
+        </div>
+      </div>
+
+      <!-- PAGE: Growth -->
+      <div class="page" id="page-growth">
+        <div class="section-head">
+          <h2>Growth Tracker</h2>
+          <div style="display:flex;gap:10px;">
+            <button class="btn btn-sm" onclick="syncFromInstagram(this)"><svg class="ic" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg> Sync from Instagram</button>
+            <button class="btn btn-primary btn-sm" onclick="openFollowerLogForm()">+ Log Follower Count</button>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="stat-grid" id="growthStatGrid" style="margin-bottom:18px;"></div>
+          <div id="growthProgressBars" style="margin-bottom:18px;"></div>
+          <div class="chart-wrap" style="height:280px;"><canvas id="followerChart"></canvas></div>
+        </div>
+      </div>
+
+      <!-- PAGE: Reels -->
+      <div class="page" id="page-reels">
+        <div class="section-head">
+          <h2>Reel Performance</h2>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <button class="btn btn-sm" onclick="clearSampleData()"><svg class="ic" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> Clear sample data</button>
+            <button class="btn btn-sm" onclick="syncFromInstagram(this)"><svg class="ic" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg> Sync from Instagram</button>
+            <button class="btn btn-sm" onclick="openPublishReelForm()"><svg class="ic" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> Publish Reel</button>
+            <button class="btn btn-primary btn-sm" onclick="openReelForm()">+ Add reel</button>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="chart-wrap"><canvas id="reelChart"></canvas></div>
+          <div id="chartFallbackMsg" class="chart-fallback-msg" style="display:none;">
+            <svg class="ic" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Chart.js failed to load from the CDN (are you offline?). Showing the table below instead — all data is still here.
+          </div>
+          <div id="reelDetail"></div>
+        </div>
+        <div class="panel" style="margin-top:16px;">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Date</th><th>Caption</th><th>Type</th><th class="num">Views</th><th class="num">Likes</th><th class="num">Comments</th><th></th></tr></thead>
+              <tbody id="reelTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- PAGE: Agents -->
+      <div class="page" id="page-agents">
+        <div class="section-head"><h2>Agent Team</h2><span class="sub">Chat with each agent — context carries across turns</span></div>
+        <div class="agents-layout">
+          <div class="agent-list" id="agentList"></div>
+          <div class="ideas-panel">
+            <h3>Ideas Backlog</h3>
+            <div id="ideasPanelList"></div>
+            <div class="backlog-add-row">
+              <input type="text" id="newIdeaInput" placeholder="Add a new idea..." style="flex:1;background:var(--bg-elev-2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:8px 10px;font-size:12px;"/>
+              <button class="btn btn-sm" onclick="addIdeaFromPanel()">+ Add</button>
+            </div>
+          </div>
+          <div class="chat-panel">
+            <div class="chat-header">
+              <div class="chat-header-info">
+                <div class="title" id="chatAgentTitle">Ideas Agent</div>
+                <div class="desc" id="chatAgentDesc"></div>
+              </div>
+              <div class="chat-header-actions">
+                <button class="btn btn-sm" id="chatCopyPromptBtn" onclick="copyCurrentSystemPrompt()"><svg class="ic" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg> Copy system prompt</button>
+                <button class="btn btn-sm btn-danger" onclick="clearChatConversation()">Clear chat</button>
+              </div>
+            </div>
+            <div class="chat-messages" id="chatMessages"></div>
+            <div class="chat-input-row">
+              <textarea id="chatInput" placeholder="Message this agent… (Shift+Enter for newline)" onkeydown="handleChatKeydown(event)" oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px'"></textarea>
+              <button class="btn btn-primary" onclick="sendChatMessage()">Send</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PAGE: Competitors -->
+      <div class="page" id="page-competitors">
+        <div class="section-head">
+          <h2>Competitor Tracker</h2>
+          <button class="btn btn-primary btn-sm" onclick="openCompetitorForm()">+ Add competitor</button>
+        </div>
+        <div class="competitor-grid" id="competitorGrid"></div>
+        <div class="panel">
+          <div class="panel-toolbar"><strong style="font-size:13.5px;">Leaderboard — avg views per reel</strong></div>
+          <div id="leaderboard"></div>
+        </div>
+      </div>
+
+      <div class="footer-note">Everything on this page is stored locally in your browser (localStorage). No account, no server, no data leaves your machine.</div>
+    </div>
+  </div>
+</div>
+
+<div id="modalRoot"></div>
+<div id="toast"></div>
+
+<script>
+/* ============================= ICONS ============================= */
+const ICONS = {
+  overview:'<rect x="3" y="12" width="4" height="9" rx="1"/><rect x="10" y="7" width="4" height="14" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/>',
+  growth:'<polyline points="22 7 13.5 15.5 8.5 10.5 2 16"/><polyline points="16 7 22 7 22 13"/>',
+  reels:'<polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>',
+  agents:'<rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="1" y1="15" x2="4" y2="15"/><line x1="20" y1="15" x2="23" y2="15"/>',
+  competitors:'<circle cx="12" cy="8" r="6"/><polyline points="8.5 13.5 7 22 12 19 17 22 15.5 13.5"/>',
+  sun:'<circle cx="12" cy="12" r="4.5"/><line x1="12" y1="1.5" x2="12" y2="3.5"/><line x1="12" y1="20.5" x2="12" y2="22.5"/><line x1="4.2" y1="4.2" x2="5.6" y2="5.6"/><line x1="18.4" y1="18.4" x2="19.8" y2="19.8"/><line x1="1.5" y1="12" x2="3.5" y2="12"/><line x1="20.5" y1="12" x2="22.5" y2="12"/><line x1="4.2" y1="19.8" x2="5.6" y2="18.4"/><line x1="18.4" y1="5.6" x2="19.8" y2="4.2"/>',
+  moon:'<path d="M20.5 13.4A8.5 8.5 0 1 1 10.6 3.5a7 7 0 0 0 9.9 9.9z"/>',
+  settings:'<path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/><circle cx="12" cy="12" r="3"/>',
+  refresh:'<polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>',
+  trash:'<polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/>',
+  edit:'<path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>',
+  upload:'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>',
+  download:'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>',
+  clipboard:'<rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>',
+  alert:'<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>',
+  search:'<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>',
+  calendar:'<rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>',
+  eye:'<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>',
+  heart:'<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>',
+  comment:'<path d="M21 11.5a8.38 8.38 0 0 1-1.9 5.4 8.5 8.5 0 0 1-6.6 3.1 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>',
+  activity:'<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>',
+  bookmark:'<path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>',
+  tag:'<path d="M20.59 13.41L13.42 20.58a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/>',
+  users:'<path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M15 3.13a4 4 0 0 1 0 7.75"/>',
+  zap:'<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>',
+  check:'<polyline points="20 6 9 17 4 12"/>',
+  checkCircle:'<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>',
+  mail:'<path d="M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/><polyline points="22 6 12 13 2 6"/>',
+  x:'<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>',
+  externalLink:'<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>',
+  send:'<line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>',
+  sparkle:'<path d="M12 2l1.8 5.4L19 9l-5.2 1.6L12 16l-1.8-5.4L5 9l5.2-1.6L12 2z"/><path d="M19 15l.9 2.6L22 18.5l-2.1.9L19 22l-.9-2.6-2.1-.9 2.1-.9z"/>',
+  film:'<rect x="2" y="3" width="20" height="18" rx="2"/><line x1="7" y1="3" x2="7" y2="21"/><line x1="17" y1="3" x2="17" y2="21"/><line x1="2" y1="9" x2="7" y2="9"/><line x1="2" y1="15" x2="7" y2="15"/><line x1="17" y1="9" x2="22" y2="9"/><line x1="17" y1="15" x2="22" y2="15"/>',
+  signal:'<path d="M2 20h.01"/><path d="M7 20v-4"/><path d="M12 20v-8"/><path d="M17 20V8"/><path d="M22 20V4"/>'
+};
+function icon(name, size){
+  size = size || 16;
+  return '<svg class="ic" width="'+size+'" height="'+size+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+(ICONS[name]||'')+'</svg>';
+}
+
+/* ============================= DATA MODEL ============================= */
+const STORAGE_KEY = 'cwc_dashboard_data_v1';
+
+const CONTENT_TYPES = ['Before/After','Team in action','Customer testimonial/result','Tip/Educational','Process/Behind-the-scenes','Time-lapse/transformation','Text/Quote overlay'];
+const HOOK_ANGLES = ['Aesthetic transformation','Speed/efficiency','Problem-solution','Relatability','Educational value','Humor/personality'];
+const MEDIA_FORMATS = ['Reel','Static image','Carousel','Story'];
+const CAPTION_TONES = ['Professional/Corporate','Casual/Conversational','Educational/Instructional','Personality-driven','CTA-heavy'];
+
+const PIPELINE_STAGES = ['idea','stage1','stage2','stage3','launched','scrapped'];
+const PIPELINE_STAGE_LABELS = { idea:'Idea', stage1:'Stage 1', stage2:'Stage 2', stage3:'Stage 3', launched:'Launched', scrapped:'Scrapped' };
+function stageLabel(stage){ return PIPELINE_STAGE_LABELS[stage] || PIPELINE_STAGE_LABELS.idea; }
+
+function sampleReels(){
+  return [
+    {id:1,date:'2026-06-19',caption:"Client said \"I didn't know windows could look like this\"",views:15800,likes:990,comments:58,url:'https://www.instagram.com/reel/sample_cwc_01/',
+      contentType:'Customer testimonial/result',hook:'Relatability',format:'Reel',captionTone:'Personality-driven',hashtagsUsed:'#windowcleaning #miami',locationTag:'Miami, FL',cta:'DM for a free quote',inquiries:4,jobsBooked:1},
+    {id:2,date:'2026-06-22',caption:'Before you DIY your windows, watch this',views:9700,likes:610,comments:40,url:'https://www.instagram.com/reel/sample_cwc_02/',
+      contentType:'Tip/Educational',hook:'Educational value',format:'Reel',captionTone:'Educational/Instructional',hashtagsUsed:'#windowcleaningtips #homeowner',locationTag:'',cta:'Save this for later',inquiries:1,jobsBooked:0},
+    {id:3,date:'2026-06-25',caption:"Rain just ruined our schedule... here's what we do",views:4800,likes:260,comments:12,url:'https://www.instagram.com/reel/sample_cwc_03/',
+      contentType:'Process/Behind-the-scenes',hook:'Relatability',format:'Reel',captionTone:'Casual/Conversational',hashtagsUsed:'#windowcleaner #smallbusiness',locationTag:'',cta:'',inquiries:0,jobsBooked:0},
+    {id:4,date:'2026-06-27',caption:'Storefront glass transformation in 60 seconds',views:11500,likes:690,comments:31,url:'https://www.instagram.com/reel/sample_cwc_04/',
+      contentType:'Before/After',hook:'Speed/efficiency',format:'Reel',captionTone:'CTA-heavy',hashtagsUsed:'#commercialcleaning #miami',locationTag:'Miami, FL',cta:'Link in bio for commercial quotes',inquiries:2,jobsBooked:1},
+    {id:5,date:'2026-06-29',caption:"We're hiring! Behind the scenes of our crew",views:3100,likes:180,comments:9,url:'https://www.instagram.com/reel/sample_cwc_05/',
+      contentType:'Team in action',hook:'Relatability',format:'Reel',captionTone:'Casual/Conversational',hashtagsUsed:'#nowhiring #miami',locationTag:'Miami, FL',cta:'DM to apply',inquiries:0,jobsBooked:0},
+    {id:6,date:'2026-07-01',caption:'3 tips to keep your windows streak-free between cleanings',views:6200,likes:410,comments:18,url:'https://www.instagram.com/reel/sample_cwc_06/',
+      contentType:'Tip/Educational',hook:'Educational value',format:'Reel',captionTone:'Educational/Instructional',hashtagsUsed:'#windowcleaningtips',locationTag:'',cta:'Save this for later',inquiries:0,jobsBooked:0},
+    {id:7,date:'2026-07-03',caption:'Worst windows we have ever cleaned (6 months of grime)',views:33500,likes:2700,comments:175,url:'https://www.instagram.com/reel/sample_cwc_07/',
+      contentType:'Before/After',hook:'Aesthetic transformation',format:'Reel',captionTone:'Personality-driven',hashtagsUsed:'#satisfying #beforeandafter #miami',locationTag:'Miami, FL',cta:'Comment WOW if this satisfied you',inquiries:6,jobsBooked:2},
+    {id:8,date:'2026-07-04',caption:"This homeowner's reaction was priceless",views:21000,likes:1650,comments:130,url:'https://www.instagram.com/reel/sample_cwc_08/',
+      contentType:'Customer testimonial/result',hook:'Humor/personality',format:'Reel',captionTone:'Personality-driven',hashtagsUsed:'#windowcleaning #miami',locationTag:'Miami, FL',cta:'DM for a free quote',inquiries:5,jobsBooked:2},
+    {id:9,date:'2026-07-05',caption:'How much does window cleaning actually cost? (real prices)',views:14200,likes:780,comments:95,url:'https://www.instagram.com/reel/sample_cwc_09/',
+      contentType:'Tip/Educational',hook:'Problem-solution',format:'Reel',captionTone:'CTA-heavy',hashtagsUsed:'#windowcleaning #pricing',locationTag:'',cta:'DM for a free quote',inquiries:8,jobsBooked:3},
+    {id:10,date:'2026-07-07',caption:'Day in the life of a window cleaner',views:8100,likes:540,comments:22,url:'https://www.instagram.com/reel/sample_cwc_10/',
+      contentType:'Process/Behind-the-scenes',hook:'Relatability',format:'Reel',captionTone:'Casual/Conversational',hashtagsUsed:'#dayinthelife #miami',locationTag:'Miami, FL',cta:'',inquiries:1,jobsBooked:0},
+    {id:11,date:'2026-07-08',caption:"The most satisfying squeegee sound you'll hear today",views:52300,likes:3900,comments:210,url:'https://www.instagram.com/reel/sample_cwc_11/',
+      contentType:'Time-lapse/transformation',hook:'Aesthetic transformation',format:'Reel',captionTone:'Personality-driven',hashtagsUsed:'#asmr #satisfying #windowcleaning',locationTag:'',cta:'Follow for more',inquiries:9,jobsBooked:2},
+    {id:12,date:'2026-07-09',caption:'POV: your windows before vs after (wait for it)',views:18400,likes:1200,comments:64,url:'https://www.instagram.com/reel/sample_cwc_12/',
+      contentType:'Before/After',hook:'Aesthetic transformation',format:'Reel',captionTone:'CTA-heavy',hashtagsUsed:'#beforeandafter #miami',locationTag:'Miami, FL',cta:'DM for a free quote',inquiries:3,jobsBooked:1}
+  ];
+}
+
+function defaultData(){
+  return {
+    settings:{ businessName:'Coast Window Cleaning', handle:'@CHANGE_ME', postingGoal:'1 reel per day', stretchGoal:200000, realisticGoal:15000, goalDeadline:'2026-12-31', theme:'light' },
+    reels: sampleReels(),
+    nextReelId: 13,
+    agents:{
+      ideas:{messages:[]}, hook:{messages:[]}, planner:{messages:[]}, analyst:{messages:[]}, dm:{messages:[]}
+    },
+    ideasBacklog:[
+      {id:1, text:'Satisfying before/after: grimy storm windows transformation', stage:'idea'},
+      {id:2, text:'Squeegee ASMR close-up on a large storefront window', stage:'stage1'},
+      {id:3, text:'Client reaction video after first-time cleaning reveal', stage:'launched'}
+    ],
+    nextBacklogId:4,
+    competitors:[
+      {id:1,name:'Competitor A',handle:'@competitor_a_placeholder',url:'https://www.instagram.com/competitor_a_placeholder/',followers:12000,posts:[]},
+      {id:2,name:'Competitor B',handle:'@competitor_b_placeholder',url:'https://www.instagram.com/competitor_b_placeholder/',followers:8400,posts:[]},
+      {id:3,name:'Competitor C',handle:'@competitor_c_placeholder',url:'https://www.instagram.com/competitor_c_placeholder/',followers:21500,posts:[]}
+    ],
+    nextCompetitorId:4,
+    nextPostId:1,
+    usage:{ monthKey:'', spendUsd:0, calls:0, capUsd:15 },
+    followerHistory:[
+      {id:1, date:'2026-07-11', count:500}
+    ],
+    nextFollowerEntryId:2
+  };
+}
+
+let data = loadData();
+
+function mergeWithDefaults(parsed){
+  if(!parsed || typeof parsed !== 'object') return defaultData();
+  const d = defaultData();
+  const mergedAgents = {};
+  const defaultAgents = d.agents;
+  const savedAgents = parsed.agents || {};
+  Object.keys(defaultAgents).forEach(function(k){
+    mergedAgents[k] = Object.assign({messages:[]}, defaultAgents[k], savedAgents[k]||{});
+  });
+  const mergedBacklog = (Array.isArray(parsed.ideasBacklog) ? parsed.ideasBacklog : d.ideasBacklog).map(function(item){
+    if(item.stage && PIPELINE_STAGES.indexOf(item.stage) > -1) return item;
+    // migrate old used:boolean model to the stage pipeline
+    const stage = item.used ? 'launched' : 'idea';
+    return Object.assign({}, item, {stage:stage});
+  });
+  return Object.assign(d, parsed, {
+    settings: Object.assign(d.settings, parsed.settings||{}),
+    agents: mergedAgents,
+    ideasBacklog: mergedBacklog
+  });
+}
+function loadData(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return defaultData();
+    const parsed = JSON.parse(raw);
+    return mergeWithDefaults(parsed);
+  }catch(e){
+    console.warn('Could not parse saved data, using defaults.', e);
+    return defaultData();
+  }
+}
+function saveData(skipServerSync){
+  data.updatedAt = Date.now();
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  if(!skipServerSync) queueServerSync();
+}
+
+/* ---- Server-side mirror sync (survives across devices, powers the scheduled Telegram brief) ---- */
+let __serverSyncTimer = null;
+function queueServerSync(){
+  clearTimeout(__serverSyncTimer);
+  __serverSyncTimer = setTimeout(function(){
+    fetch('/api/data', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(data)
+    }).catch(function(){ /* offline or server unreachable -- localStorage still has it */ });
+  }, 1500);
+}
+async function bootstrapFromServer(){
+  try{
+    const resp = await fetch('/api/data', {cache:'no-store'});
+    if(!resp.ok) return;
+    const server = await resp.json();
+    if(!server || typeof server !== 'object' || !Array.isArray(server.reels)) return;
+    const localUpdated = data.updatedAt || 0;
+    const serverUpdated = server.updatedAt || 0;
+    if(serverUpdated > localUpdated){
+      data = mergeWithDefaults(server);
+      saveData(true);
+      renderAll();
+    }
+  }catch(e){ /* server not reachable -- keep using local data */ }
+}
+
+/* ============================= THEME ============================= */
+function cssVar(name){
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+function chartColors(){
+  return {
+    accent: cssVar('--accent'),
+    green: cssVar('--green'),
+    amber: cssVar('--amber'),
+    red: cssVar('--red'),
+    tick: cssVar('--text-dim'),
+    grid: cssVar('--border-soft')
+  };
+}
+function toggleTheme(){
+  const current = document.documentElement.getAttribute('data-theme') || 'light';
+  const next = current === 'light' ? 'dark' : 'light';
+  document.documentElement.setAttribute('data-theme', next);
+  data.settings.theme = next;
+  saveData();
+  renderThemeToggleIcon();
+  renderChart();
+  renderFollowerChart();
+}
+function renderThemeToggleIcon(){
+  const btn = document.getElementById('themeToggleBtn');
+  if(!btn) return;
+  const current = document.documentElement.getAttribute('data-theme') || 'light';
+  btn.innerHTML = icon(current === 'light' ? 'moon' : 'sun', 16);
+}
+
+/* ============================= UTIL ============================= */
+function escapeHtml(str){
+  if(str===undefined||str===null) return '';
+  return String(str)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+}
+function fmtNum(n){
+  if(n===null||n===undefined||isNaN(n)) return '—';
+  return Math.round(n).toLocaleString('en-US');
+}
+function fmtDate(iso){
+  if(!iso) return '';
+  const d = new Date(iso+'T00:00:00');
+  if(isNaN(d)) return iso;
+  return d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+}
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(window.__toastTimer);
+  window.__toastTimer = setTimeout(()=>t.classList.remove('show'), 2200);
+}
+function copyText(str){
+  function fallback(){
+    const ta=document.createElement('textarea');
+    ta.value=str; ta.style.position='fixed'; ta.style.left='-9999px';
+    document.body.appendChild(ta); ta.focus(); ta.select();
+    try{ document.execCommand('copy'); showToast('Copied to clipboard'); }
+    catch(e){ showToast('Could not copy — select and copy manually'); }
+    document.body.removeChild(ta);
+  }
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(str).then(()=>showToast('Copied to clipboard')).catch(fallback);
+  } else {
+    fallback();
+  }
+}
+function lastAgentReply(key){
+  const msgs = (data.agents[key] && data.agents[key].messages) || [];
+  for(let i=msgs.length-1;i>=0;i--){
+    if(msgs[i].role==='assistant') return msgs[i].content || '';
+  }
+  return '';
+}
+function sortedReels(){
+  return [...data.reels].sort((a,b)=> a.date.localeCompare(b.date));
+}
+function last12Reels(){
+  const s = sortedReels();
+  return s.slice(Math.max(0, s.length-12));
+}
+function previous12Reels(){
+  const s = sortedReels();
+  const end = Math.max(0, s.length-12);
+  return s.slice(Math.max(0,end-12), end);
+}
+
+/* ============================= MODAL SYSTEM ============================= */
+const modalRoot = document.getElementById('modalRoot');
+function openModal(html, opts){
+  opts = opts || {};
+  modalRoot.innerHTML = '<div class="modal-overlay" id="activeModalOverlay"><div class="modal '+(opts.wide?'modal-wide':'')+'">'+html+'</div></div>';
+  const overlay = document.getElementById('activeModalOverlay');
+  let mouseDownOnOverlay = false;
+  overlay.addEventListener('mousedown', function(e){
+    mouseDownOnOverlay = (e.target.id === 'activeModalOverlay');
+  });
+  overlay.addEventListener('click', function(e){
+    if(mouseDownOnOverlay && e.target.id === 'activeModalOverlay') closeModal();
+    mouseDownOnOverlay = false;
+  });
+  document.addEventListener('keydown', escCloseHandler);
+}
+function closeModal(){
+  modalRoot.innerHTML = '';
+  document.removeEventListener('keydown', escCloseHandler);
+}
+function escCloseHandler(e){ if(e.key === 'Escape') closeModal(); }
+
+/* ============================= SECTION A: STATS ============================= */
+function renderStats(){
+  const grid = document.getElementById('statGrid');
+  const cur = last12Reels();
+  const prev = previous12Reels();
+
+  let totalViews = '—', avgViews = '—', bestHtml = '—', trendHtml = '—', streakHtml = '—';
+
+  if(cur.length){
+    const total = cur.reduce((s,r)=>s+Number(r.views||0),0);
+    totalViews = fmtNum(total);
+    avgViews = fmtNum(total/cur.length);
+    const best = cur.reduce((a,b)=> Number(b.views||0) > Number(a.views||0) ? b : a);
+    bestHtml = escapeHtml(best.caption) + '<div class="stat-sub">'+fmtNum(best.views)+' views</div>';
+  }
+
+  if(cur.length && prev.length === 12){
+    const totalCur = cur.reduce((s,r)=>s+Number(r.views||0),0);
+    const totalPrev = prev.reduce((s,r)=>s+Number(r.views||0),0);
+    if(totalPrev > 0){
+      const pct = ((totalCur-totalPrev)/totalPrev)*100;
+      const up = pct >= 0;
+      trendHtml = '<span class="'+(up?'trend-up':'trend-down')+'">'+(up?'▲':'▼')+' '+Math.abs(pct).toFixed(1)+'%</span>';
+    }
+  }
+
+  const streak = computeStreak();
+  streakHtml = streak > 0 ? (streak + ' day'+(streak===1?'':'s')) : '—';
+
+  const cards = [
+    {label:'Total Views (last 12)', value:totalViews},
+    {label:'Avg Views / Reel', value:avgViews},
+    {label:'Best Performing Reel', value:bestHtml, small:true},
+    {label:'Views Trend vs Prev 12', value:trendHtml},
+    {label:'Posting Streak', value:streakHtml}
+  ];
+
+  grid.innerHTML = cards.map(c=>
+    '<div class="stat-card"><div class="stat-label">'+c.label+'</div><div class="stat-value'+(c.small?' small':'')+'">'+c.value+'</div></div>'
+  ).join('');
+}
+
+function computeStreak(){
+  const dates = [...new Set(data.reels.map(r=>r.date))].sort().reverse();
+  if(!dates.length) return 0;
+  let streak = 1;
+  for(let i=0;i<dates.length-1;i++){
+    const d1 = new Date(dates[i]+'T00:00:00');
+    const d2 = new Date(dates[i+1]+'T00:00:00');
+    const diffDays = Math.round((d1-d2)/86400000);
+    if(diffDays === 1){ streak++; } else { break; }
+  }
+  return streak;
+}
+
+/* ============================= GROWTH TRACKER ============================= */
+let followerChartInstance = null;
+
+function sortedFollowerHistory(){
+  return [...data.followerHistory].sort((a,b)=> a.date.localeCompare(b.date));
+}
+function latestFollowerCount(){
+  const h = sortedFollowerHistory();
+  return h.length ? h[h.length-1].count : 0;
+}
+function daysUntilDeadline(){
+  const deadline = new Date(data.settings.goalDeadline+'T23:59:59');
+  const now = new Date();
+  return Math.max(0, Math.ceil((deadline-now)/86400000));
+}
+function neededPerDay(goal){
+  const current = latestFollowerCount();
+  const remaining = Math.max(0, goal-current);
+  const days = daysUntilDeadline();
+  return days > 0 ? remaining/days : remaining;
+}
+
+function renderGrowthTracker(){
+  const current = latestFollowerCount();
+  const days = daysUntilDeadline();
+  const grid = document.getElementById('growthStatGrid');
+  grid.innerHTML = [
+    {label:'Current Followers', value:fmtNum(current)},
+    {label:'Days Until '+fmtDate(data.settings.goalDeadline), value:fmtNum(days)},
+    {label:'Pace Needed — Stretch Goal', value:fmtNum(neededPerDay(data.settings.stretchGoal))+' / day'},
+    {label:'Pace Needed — Realistic Goal', value:fmtNum(neededPerDay(data.settings.realisticGoal))+' / day'}
+  ].map(c=>'<div class="stat-card"><div class="stat-label">'+c.label+'</div><div class="stat-value small">'+c.value+'</div></div>').join('');
+
+  const bars = document.getElementById('growthProgressBars');
+  const goals = [
+    {name:'Stretch Goal ('+fmtNum(data.settings.stretchGoal)+')', goal:data.settings.stretchGoal, mine:false},
+    {name:'Realistic Goal ('+fmtNum(data.settings.realisticGoal)+')', goal:data.settings.realisticGoal, mine:true}
+  ];
+  bars.innerHTML = goals.map(function(g){
+    const pct = g.goal ? Math.min(100, Math.round((current/g.goal)*100)) : 0;
+    return '<div class="leaderboard-row"><div style="width:220px;">'+g.name+'</div>'+
+      '<div class="leaderboard-bar-bg"><div class="leaderboard-bar'+(g.mine?' me':'')+'" style="width:'+pct+'%;"></div></div>'+
+      '<div style="width:50px;text-align:right;">'+pct+'%</div></div>';
+  }).join('');
+
+  renderFollowerChart();
+}
+
+function renderFollowerChart(){
+  const canvas = document.getElementById('followerChart');
+  const history = sortedFollowerHistory();
+  if(history.length < 1){
+    canvas.style.display = 'none';
+    const wrap = canvas.parentElement;
+    let msg = wrap.querySelector('.growth-nudge');
+    if(!msg){
+      msg = document.createElement('div');
+      msg.className = 'growth-nudge chart-fallback-msg';
+      wrap.appendChild(msg);
+    }
+    msg.textContent = 'Log a follower count to see your growth trend and pace vs goal.';
+    if(followerChartInstance){ followerChartInstance.destroy(); followerChartInstance = null; }
+    return;
+  }
+  // Remove nudge if present
+  const existingNudge = canvas.parentElement && canvas.parentElement.querySelector('.growth-nudge');
+  if(existingNudge) existingNudge.remove();
+  if(typeof Chart === 'undefined'){
+    canvas.style.display = 'none';
+    return;
+  }
+  canvas.style.display = 'block';
+  const colors = chartColors();
+  if(followerChartInstance) followerChartInstance.destroy();
+
+  const labels = history.map(h=>fmtDate(h.date));
+  const actualData = history.map(h=>h.count);
+  const deadline = data.settings.goalDeadline;
+  const lastHistoryDate = history[history.length-1].date;
+  const showPaceLines = deadline && deadline > lastHistoryDate;
+  if(showPaceLines){
+    labels.push(fmtDate(deadline)+' (goal)');
+    actualData.push(null);
+  }
+  const startCount = history[0].count;
+  function paceLine(goal){
+    if(!showPaceLines) return null;
+    const line = new Array(labels.length).fill(null);
+    line[0] = startCount;
+    line[labels.length-1] = goal;
+    return line;
+  }
+  const realisticLine = paceLine(data.settings.realisticGoal);
+  const stretchLine = paceLine(data.settings.stretchGoal);
+
+  const datasets = [{
+    label:'Followers',
+    data: actualData,
+    borderColor: colors.green,
+    backgroundColor: colors.green.startsWith('#') ? colors.green+'1f' : colors.green,
+    fill:true,
+    tension:0.25,
+    pointRadius:3,
+    spanGaps:false
+  }];
+  if(realisticLine){
+    datasets.push({
+      label:'Pace — Realistic Goal',
+      data: realisticLine,
+      borderColor: colors.amber,
+      borderDash:[6,4],
+      pointRadius:0,
+      fill:false,
+      spanGaps:true
+    });
+  }
+  if(stretchLine){
+    datasets.push({
+      label:'Pace — Stretch Goal',
+      data: stretchLine,
+      borderColor: colors.accent,
+      borderDash:[3,3],
+      pointRadius:0,
+      fill:false,
+      spanGaps:true
+    });
+  }
+
+  followerChartInstance = new Chart(canvas.getContext('2d'), {
+    type:'line',
+    data:{ labels: labels, datasets: datasets },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      plugins:{ legend:{display: showPaceLines, position:'bottom', labels:{color:colors.tick, boxWidth:12, font:{size:11}}} },
+      scales:{
+        x:{ ticks:{ color: colors.tick, font:{size:10} }, grid:{ display:false } },
+        y:{ ticks:{ color: colors.tick }, grid:{ color: colors.grid } }
+      }
+    }
+  });
+}
+
+function openFollowerLogForm(){
+  const today = new Date().toISOString().slice(0,10);
+  openModal(
+    '<div class="modal-header"><div class="modal-title">Log Follower Count</div><button class="modal-close" onclick="closeModal()">'+icon('x',16)+'</button></div>'+
+    '<div class="modal-body">'+
+      '<div class="form-grid">'+
+        '<div class="field"><label>Date</label><input type="date" id="fl_date" value="'+today+'"/></div>'+
+        '<div class="field"><label>Follower Count</label><input type="number" id="fl_count" value="'+latestFollowerCount()+'"/></div>'+
+      '</div>'+
+      '<div class="form-actions"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveFollowerLogForm()">Save</button></div>'+
+    '</div>'
+  );
+}
+function saveFollowerLogForm(){
+  const dateVal = document.getElementById('fl_date').value || new Date().toISOString().slice(0,10);
+  const countVal = Number(document.getElementById('fl_count').value) || 0;
+  const existing = data.followerHistory.find(h=>h.date===dateVal);
+  if(existing){
+    existing.count = countVal;
+  } else {
+    data.followerHistory.push({id:data.nextFollowerEntryId++, date:dateVal, count:countVal});
+  }
+  saveData();
+  closeModal();
+  renderGrowthTracker();
+  showToast('Follower count logged');
+}
+
+/* ============================= SECTION B: AGENTS ============================= */
+function buildIdeasPrompt(s){
+  return 'You are a short-form content strategist for a local home-services business.\n\n'+
+'BUSINESS: '+s.businessName+' — residential + commercial window cleaning\n'+
+'INSTAGRAM: '+s.handle+'\n'+
+'PLATFORM: Instagram Reels\n'+
+'GOAL: Get local homeowners and small businesses to book a window cleaning job after watching.\n\n'+
+'Generate 10 Instagram Reel ideas for this business. Mix these proven formats across the 10 ideas (use each at least once, repeat the strongest ones):\n'+
+'1. Satisfying before/after (grimy to spotless transformation)\n'+
+'2. Oddly satisfying squeegee ASMR (close-up sound/visual only, minimal talking)\n'+
+'3. Day-in-the-life of the crew\n'+
+'4. Pricing transparency ("what this actually costs")\n'+
+'5. Client reaction / testimonial in the moment\n'+
+'6. "Worst window we\'ve ever cleaned"\n'+
+'7. Tips for homeowners (streak-free windows, how often to clean, DIY mistakes)\n'+
+'8. Hiring / behind-the-scenes of the business\n\n'+
+'For EACH of the 10 ideas, return in this exact structure:\n\n'+
+'**Idea #: [short title]**\n'+
+'- Format: [which proven format this uses]\n'+
+'- Emotional trigger: [the specific emotion this exploits — satisfaction, curiosity, trust, humor, FOMO, relatability, aspiration, etc — and WHY that emotion drives action]\n'+
+'- Why it fits a local service business: [explain how this idea builds trust, demonstrates expertise, or removes a specific objection a homeowner/business owner has before booking]\n'+
+'- Visual concept: [one sentence describing what the camera actually sees]\n\n'+
+'Rules:\n'+
+'- Ideas must be filmable with just a phone and the crew\'s normal workday — no studio, no actors, no paid tools.\n'+
+'- At least 3 ideas should require zero extra effort beyond filming a job that\'s already happening.\n'+
+'- Vary energy: some calm/ASMR, some high-energy/funny, at least one hard-sell pricing/CTA piece.\n'+
+'- Do not repeat the same hook style twice in a row.\n'+
+'- End with a ranked "if you only film ONE this week" recommendation and say why.';
+}
+
+function buildHookPrompt(s){
+  return 'You are a short-form video scriptwriter specializing in local home-service businesses on Instagram Reels.\n\n'+
+'BUSINESS: '+s.businessName+' — residential + commercial window cleaning\n'+
+'INSTAGRAM: '+s.handle+'\n\n'+
+'I will give you ONE reel idea (paste it below this prompt). Turn it into a ready-to-film script.\n\n'+
+'IDEA: [paste idea here]\n\n'+
+'Return exactly this structure:\n\n'+
+'## 3 HOOK OPTIONS (first 1.5 seconds only)\n'+
+'For each of the 3 hooks give:\n'+
+'- Spoken line (what\'s said out loud in the first 1.5 sec)\n'+
+'- On-screen text (the overlay shown at the same moment — should NOT just repeat the spoken line word-for-word, it should add a visual punch)\n'+
+'- Why this hook stops the scroll for someone who has dirty windows or owns a storefront\n\n'+
+'## SCRIPT (20-35 seconds)\n'+
+'Shot-by-shot breakdown. For each shot include:\n'+
+'- Timestamp range (e.g. 0:00-0:03)\n'+
+'- Shot description / camera angle\n'+
+'- What\'s said (if anything)\n'+
+'- On-screen text (if any)\n'+
+'Build to a clear payoff moment (the transformation, the reaction, the reveal) around the 60-75% mark, then a soft CTA in the last 2-3 seconds.\n\n'+
+'## CAPTION\n'+
+'Write one caption (2-4 sentences max) that:\n'+
+'- Reinforces the hook\n'+
+'- Includes a clear, low-friction local call-to-action (e.g. "Book your free quote — link in bio" or "Comment WINDOWS and we\'ll get you a quote today")\n'+
+'- Sounds like a real tradesperson, not a marketing agency\n\n'+
+'## HASHTAGS\n'+
+'Give exactly 5 hashtags: mix niche (window cleaning / home services) with local relevance (use a [CITY] placeholder if no city is given). Label which are niche vs local.';
+}
+
+function buildPlannerPrompt(s){
+  return 'You are a content planner for a local window cleaning business posting daily to Instagram Reels.\n\n'+
+'BUSINESS: '+s.businessName+'\n'+
+'INSTAGRAM: '+s.handle+'\n'+
+'POSTING GOAL: '+s.postingGoal+'\n\n'+
+'I will paste my current ideas backlog below. Each idea shows its pipeline stage in brackets (Idea = just captured, Stage 1-3 = in development/further along, Launched = already posted, Scrapped = abandoned). Build a 7-day content calendar, preferring ideas that are further along in the pipeline (Stage 2/3) since they are closer to camera-ready, and never scheduling a Launched or Scrapped idea.\n\n'+
+'IDEAS BACKLOG:\n[paste backlog here]\n\n'+
+'For each of the 7 days, return:\n'+
+'- Day + suggested posting time (pick times based on when a LOCAL SERVICE audience — homeowners, property managers, small business owners — is actually scrolling: early morning before work, lunch break, evening 7-9pm; weekends skew later morning)\n'+
+'- Which idea from the backlog to film/post (or a new one if the backlog runs short)\n'+
+'- Format tag (before/after, ASMR, day-in-life, pricing, reaction, worst-window, tips, hiring)\n'+
+'- One-line reason this format fits this day of the week (e.g. Mondays = motivational/behind-scenes, Fridays = satisfying transformation before the weekend)\n\n'+
+'Rules:\n'+
+'- No format repeats two days in a row.\n'+
+'- Include at least one pricing-transparency post and one client-reaction post across the week.\n'+
+'- Flag if the backlog doesn\'t have enough variety and suggest what new idea type to add.\n'+
+'- End with a short note on which day is the "hero post" most likely to perform best, and why.';
+}
+
+function buildAnalystPrompt(s){
+  return 'You are the strategic intelligence layer for '+s.businessName+'\'s Instagram presence.\n\n'+
+'BUSINESS: '+s.businessName+'\n'+
+'INSTAGRAM: '+s.handle+'\n\n'+
+'BRAND VOICE CONSTRAINTS (every recommendation must respect these):\n'+
+'- Authentic, direct, results-focused — no corporate fluff\n'+
+'- Local pride in the service area — reference the market, weather, commercial landscape where relevant\n'+
+'- Work ethic visible — the crew, tools, and process are part of the appeal, not just the finished result\n'+
+'- Minimalist aesthetic — clean compositions, no excessive overlays\n'+
+'- Value-driven — tie recommendations back to customer ROI (cleaner windows = curb appeal = property value), not vanity metrics alone\n\n'+
+'DATA PROVIDED BELOW includes, per reel: views, likes, comments, and — only when available — reach, saved count, average watch time, engagement rate, save rate, content type, hook/angle, format, caption tone, hashtags, location tag, CTA, inquiries, jobs booked, and comment sentiment (if analyzed). Account-level profile views and bio link clicks are included when available.\n\n'+
+'IMPORTANT — DO NOT INVENT DATA: Some metrics (replays, pause rate, autoplay-vs-click rate, impressions attributed to a specific hashtag or location, a competitor\'s private engagement numbers, revenue) are NOT available from Instagram\'s API to anyone, including us. If asked about these, say plainly that this data isn\'t available rather than estimating a number. Work only from what is actually provided below.\n\n'+
+'ACCOUNT + REEL DATA:\n[paste exported reel data here]\n\n'+
+'Return exactly this structure:\n\n'+
+'## TOP PERFORMERS\n'+
+'Identify the top 2-3 reels by engagement rate AND, separately, by business outcome (inquiries/jobs booked) if that data is present. Name the specific content type/hook/format pattern they share. A post with high saves/likes but zero inquiries is a weaker result than a modest-engagement post that converted to real jobs — say so explicitly when this happens.\n\n'+
+'## WHAT\'S NOT WORKING\n'+
+'Identify the bottom 2-3 performers. Look for a shared weakness (weak hook, wrong content type for the audience, no clear CTA, posted at a bad time). Be specific and blunt — don\'t hedge.\n\n'+
+'## CONTENT GAP ASSESSMENT\n'+
+'Based on the content types, hooks, and formats actually logged, what hasn\'t been covered in a while? Note any of the brand\'s core content pillars (transformation/before-after, team-in-action, customer testimonial, educational tips, behind-the-scenes/commercial scale) that are underrepresented in this data.\n\n'+
+'## NOVELTY CHECK\n'+
+'Flag any idea you\'re about to recommend below that repeats the same content type + hook combination already used in the last 60 days of data provided. Suggest a variation instead of an exact repeat.\n\n'+
+'## 3 CONCRETE CHANGES FOR NEXT 2 WEEKS\n'+
+'Give exactly 3 changes, each with:\n'+
+'- The specific change (not vague advice like "post more consistently" — say exactly what to do differently)\n'+
+'- The reel(s) in the data that justify this change\n'+
+'- What metric should improve if this works, and roughly by how much\n\n'+
+'Keep the whole analysis honest and specific to THIS data — don\'t give generic Instagram growth advice, and don\'t cite any metric that wasn\'t actually included above.';
+}
+
+function buildDmPrompt(s){
+  return 'You are writing DM reply templates for a local window cleaning business\'s Instagram account.\n\n'+
+'BUSINESS: '+s.businessName+'\n'+
+'INSTAGRAM: '+s.handle+'\n\n'+
+'Write a reply template for each of these 8 common DM types this business receives:\n'+
+'1. Quote request ("how much to clean my windows?")\n'+
+'2. Price shopper ("another company quoted me $X, can you beat it?")\n'+
+'3. "Do you service [area]?"\n'+
+'4. Complaint (missed spot, late arrival, damage concern, etc.)\n'+
+'5. Compliment / praise on a video\n'+
+'6. Spam / collab bait / bot messages\n'+
+'7. Scheduling ("what days do you have open?")\n'+
+'8. Follow-up after a quote was given but they went quiet\n\n'+
+'For EACH type return:\n'+
+'- The DM type as a header\n'+
+'- The reply template (friendly, confident tradesperson voice — not corporate, not desperate, uses contractions, sounds like a real person who\'s good at their job)\n'+
+'- A booking push built into the reply (a specific next step: send address for exact quote, pick a day, confirm the slot) — never end on an open-ended "let me know!"\n'+
+'- One variation note for when the tone should shift (e.g. complaint replies should acknowledge before problem-solving)\n\n'+
+'Keep every template short enough to send as a real DM (2-4 sentences max) — no walls of text.';
+}
+
+/* ============================= PAGE NAVIGATION ============================= */
+const PAGE_TITLES = {overview:'Overview', growth:'Growth', reels:'Reels', agents:'Agents', competitors:'Competitors'};
+function showPage(pageId){
+  document.querySelectorAll('.page').forEach(function(p){ p.classList.remove('active'); });
+  document.querySelectorAll('.sidebar-nav-item').forEach(function(b){ b.classList.remove('active'); });
+  const page = document.getElementById('page-'+pageId);
+  if(page) page.classList.add('active');
+  const btn = document.querySelector('.sidebar-nav-item[data-page="'+pageId+'"]');
+  if(btn) btn.classList.add('active');
+  const titleEl = document.getElementById('pageTitle');
+  if(titleEl) titleEl.textContent = PAGE_TITLES[pageId] || pageId;
+  if(pageId === 'reels') requestAnimationFrame(()=>renderChart());
+  if(pageId === 'growth') requestAnimationFrame(()=>renderFollowerChart());
+  if(pageId === 'overview') requestAnimationFrame(()=>renderIgStats());
+  if(pageId === 'agents') renderAgentList();
+}
+
+const AGENT_META = {
+  ideas:{name:'Ideas Agent', icon:'zap', role:'Generates fresh reel ideas from proven viral formats', promptFn:buildIdeasPrompt,
+    desc:'The Ideas Agent is your brainstorming partner. It generates a batch of reel ideas built on formats that already work for local service businesses — before/afters, ASMR cleaning, pricing transparency, and more — so you\'re never staring at a blank page wondering what to film today.'},
+  hook:{name:'Hook & Script Agent', icon:'film', role:'Turns one idea into hooks + a shootable script', promptFn:buildHookPrompt,
+    desc:'The Hook & Script Agent takes a single idea and turns it into something you can film today: three hook options for the crucial first second and a half, a full shot-by-shot script, a caption with a local call-to-action, and hashtags.'},
+  planner:{name:'Planner Agent', icon:'calendar', role:'Builds your 7-day posting calendar', promptFn:buildPlannerPrompt,
+    desc:'The Planner Agent looks at your backlog of ideas and lays out a full week of posts, balanced across formats and timed for when local homeowners and business owners are actually on Instagram.'},
+  analyst:{name:'Analyst Agent', icon:'overview', role:'Reviews your last 12 reels and says what to change', promptFn:buildAnalystPrompt,
+    desc:'The Analyst Agent reviews your last 12 reels\' real performance data and tells you, in plain terms, what\'s working, what\'s flopping, and exactly what to change next week.'},
+  dm:{name:'DM Manager Agent', icon:'mail', role:'Writes reply templates for your most common DMs', promptFn:buildDmPrompt,
+    desc:'The DM Manager Agent writes ready-to-send reply templates for the DMs you get most — quote requests, price shoppers, complaints, compliments, and more — each written to sound like you, not a call center, and each ending with a push to book.'}
+};
+
+/* ============================= AGENT CHAT SYSTEM ============================= */
+let currentAgentKey = 'ideas';
+
+function renderAgents(){ renderAgentList(); }
+
+function renderAgentList(){
+  const list = document.getElementById('agentList');
+  if(!list) return;
+  list.innerHTML = Object.keys(AGENT_META).map(function(key){
+    const a = AGENT_META[key];
+    const msgs = (data.agents[key] && data.agents[key].messages) || [];
+    const active = key === currentAgentKey;
+    const hasOutput = msgs.length > 0;
+    return '<button class="agent-list-item'+(active?' active':'')+(hasOutput?' has-output':'')+'" onclick="selectAgent(\''+key+'\')">'+
+      '<span class="icon">'+icon(a.icon,17)+'</span>'+
+      '<div style="flex:1;min-width:0;"><div class="name">'+a.name+'</div></div>'+
+      '<div class="status-dot-sm"></div>'+
+      '</button>';
+  }).join('');
+  renderIdeasPanel();
+  updateChatHeader();
+  renderChatMessages();
+}
+
+function selectAgent(key){
+  currentAgentKey = key;
+  renderAgentList();
+}
+
+function updateChatHeader(){
+  const a = AGENT_META[currentAgentKey];
+  const titleEl = document.getElementById('chatAgentTitle');
+  const descEl = document.getElementById('chatAgentDesc');
+  if(titleEl) titleEl.innerHTML = icon(a.icon,16)+' '+escapeHtml(a.name);
+  if(descEl) descEl.textContent = a.role;
+}
+
+function stageColor(stage){
+  if(stage==='launched') return 'var(--green)';
+  if(stage==='scrapped') return 'var(--red)';
+  if(stage==='idea') return 'var(--text-faint)';
+  return 'var(--accent)';
+}
+function stageSelectOptions(current){
+  return PIPELINE_STAGES.map(function(s){
+    return '<option value="'+s+'"'+(s===current?' selected':'')+'>'+stageLabel(s)+'</option>';
+  }).join('');
+}
+function renderIdeasPanel(){
+  const container = document.getElementById('ideasPanelList');
+  if(!container) return;
+  const items = data.ideasBacklog;
+  if(!items.length){
+    container.innerHTML = '<div style="color:var(--text-faint);font-size:12px;padding:4px 0;">No ideas yet — ask the Ideas Agent!</div>';
+    return;
+  }
+  container.innerHTML = items.map(function(i){
+    return '<div class="idea-chip stage-'+i.stage+'">'+
+      '<div class="idea-chip-text" onclick="pasteIdeaToChat(\''+escapeHtml(i.text).replace(/'/g,"&#039;")+'\')">'+escapeHtml(i.text)+'</div>'+
+      '<div class="idea-chip-row">'+
+        '<span class="stage-dot" style="background:'+stageColor(i.stage)+';"></span>'+
+        '<select onchange="setIdeaStage('+i.id+',this.value)">'+stageSelectOptions(i.stage)+'</select>'+
+        '<button class="idea-chip-del" onclick="deleteBacklogItem('+i.id+')" title="Delete">'+icon('x',12)+'</button>'+
+      '</div>'+
+    '</div>';
+  }).join('');
+}
+
+function pasteIdeaToChat(text){
+  const input = document.getElementById('chatInput');
+  if(!input) return;
+  input.value = text;
+  input.focus();
+  input.style.height = 'auto';
+  input.style.height = Math.min(input.scrollHeight, 120)+'px';
+}
+
+function addIdeaFromPanel(){
+  const input = document.getElementById('newIdeaInput');
+  const val = input ? input.value.trim() : '';
+  if(!val) return;
+  data.ideasBacklog.push({id:data.nextBacklogId++, text:val, stage:'idea'});
+  saveData();
+  if(input) input.value = '';
+  renderIdeasPanel();
+}
+
+function inlineMd(s){
+  return s.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+}
+function formatAssistantMarkdown(text){
+  const lines = escapeHtml(text).split('\n');
+  let html = '';
+  let inList = false;
+  lines.forEach(function(line){
+    const trimmed = line.trim();
+    if(/^#{1,4}\s+/.test(trimmed)){
+      if(inList){ html += '</ul>'; inList = false; }
+      html += '<div class="chat-md-heading">'+inlineMd(trimmed.replace(/^#{1,4}\s+/, ''))+'</div>';
+    } else if(/^[-*]\s+/.test(trimmed)){
+      if(!inList){ html += '<ul class="chat-md-list">'; inList = true; }
+      html += '<li>'+inlineMd(trimmed.replace(/^[-*]\s+/, ''))+'</li>';
+    } else if(trimmed === ''){
+      if(inList){ html += '</ul>'; inList = false; }
+      html += '<div class="chat-md-spacer"></div>';
+    } else if(/^-{3,}$/.test(trimmed)){
+      if(inList){ html += '</ul>'; inList = false; }
+      html += '<hr class="chat-md-rule"/>';
+    } else {
+      if(inList){ html += '</ul>'; inList = false; }
+      html += '<div class="chat-md-line">'+inlineMd(trimmed)+'</div>';
+    }
+  });
+  if(inList) html += '</ul>';
+  return html;
+}
+function renderChatMessages(){
+  const container = document.getElementById('chatMessages');
+  if(!container) return;
+  const msgs = (data.agents[currentAgentKey] && data.agents[currentAgentKey].messages) || [];
+  if(!msgs.length){
+    const a = AGENT_META[currentAgentKey];
+    container.innerHTML = '<div class="chat-empty">'+
+      '<div style="margin-bottom:10px;color:var(--text-faint);">'+icon(a.icon,28)+'</div>'+
+      '<div style="font-weight:600;margin-bottom:6px;">'+escapeHtml(a.name)+'</div>'+
+      '<div style="max-width:300px;">'+escapeHtml(a.desc)+'</div>'+
+      (currentAgentKey==='planner'||currentAgentKey==='analyst'
+        ? '<div style="margin-top:10px;font-size:12px;background:var(--accent-soft);color:var(--accent);padding:6px 10px;border-radius:8px;">Your real data is auto-loaded — just say "Go" to start.</div>'
+        : '')+
+    '</div>';
+    return;
+  }
+  container.innerHTML = msgs.map(function(m){
+    const tsStr = m.ts ? new Date(m.ts).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) : '';
+    const tsHtml = tsStr ? '<div class="chat-ts">'+tsStr+'</div>' : '';
+    if(m.role === 'assistant'){
+      const costHtml = (m.costUsd != null && m.costUsd > 0) ? '<span class="chat-cost">$'+Number(m.costUsd).toFixed(4)+'</span>' : '';
+      return '<div class="chat-msg-wrap assistant"><div class="chat-bubble assistant">'+formatAssistantMarkdown(m.content)+'</div>'+tsHtml+costHtml+'</div>';
+    }
+    return '<div class="chat-msg-wrap user"><div class="chat-bubble user">'+escapeHtml(m.content)+'</div>'+tsHtml+'</div>';
+  }).join('');
+  container.scrollTop = container.scrollHeight;
+}
+
+const NO_EMOJI_CONSTRAINT = '\n\nBRAND STYLE RULE: Never use emojis anywhere in your response, including in captions, on-screen text, or hashtags. The brand voice is clean and text-only.';
+function buildSystemPrompt(key){
+  let base = AGENT_META[key].promptFn(data.settings);
+  if(key === 'planner') base = base.replace('[paste backlog here]', getBacklogText());
+  if(key === 'analyst') base = base.replace('[paste exported reel data here]', getReelDataText()) + '\n\nCONTENT PIPELINE (current ideas backlog, with each idea\'s stage):\n' + getBacklogText();
+  if(key === 'hook') base = base.replace('\n\nIDEA: [paste idea here]', '\n\nThe user will provide the idea they want scripted in the chat. Wait for their message.');
+  return base + NO_EMOJI_CONSTRAINT;
+}
+
+function copyCurrentSystemPrompt(){
+  copyText(buildSystemPrompt(currentAgentKey));
+}
+
+function clearChatConversation(){
+  if(!confirm('Clear the conversation history with this agent?')) return;
+  if(!data.agents[currentAgentKey]) data.agents[currentAgentKey] = {messages:[]};
+  data.agents[currentAgentKey].messages = [];
+  saveData();
+  renderChatMessages();
+  renderAgentList();
+  showToast('Conversation cleared');
+}
+
+function handleChatKeydown(e){
+  if(e.key === 'Enter' && !e.shiftKey){
+    e.preventDefault();
+    sendChatMessage();
+  }
+}
+
+async function sendChatMessage(){
+  const input = document.getElementById('chatInput');
+  const text = input ? input.value.trim() : '';
+  if(!text) return;
+
+  if(!backendStatus) await checkBackendHealth();
+  if(!backendStatus || !backendStatus.ok){
+    showToast('Local AI server not running — see AI-AGENT-SETUP.md');
+    return;
+  }
+  if(!backendStatus.hasKey){
+    showToast('No API key configured — see AI-AGENT-SETUP.md');
+    return;
+  }
+
+  ensureUsageMonth();
+  if(data.usage.spendUsd >= data.usage.capUsd){
+    const proceed = confirm('Monthly spend cap reached ($'+data.usage.capUsd.toFixed(2)+'). Continue anyway?');
+    if(!proceed) return;
+  }
+
+  if(!data.agents[currentAgentKey]) data.agents[currentAgentKey] = {messages:[]};
+  const agentData = data.agents[currentAgentKey];
+
+  agentData.messages.push({role:'user', content:text, ts:Date.now()});
+  if(input){ input.value = ''; input.style.height = 'auto'; }
+  saveData();
+  renderChatMessages();
+
+  const container = document.getElementById('chatMessages');
+  const typingWrap = document.createElement('div');
+  typingWrap.className = 'chat-msg-wrap assistant';
+  const typingBubble = document.createElement('div');
+  typingBubble.className = 'chat-bubble typing';
+  typingBubble.innerHTML = '<div class="typing-dots"><span></span><span></span><span></span></div>';
+  typingWrap.appendChild(typingBubble);
+  if(container){ container.appendChild(typingWrap); container.scrollTop = container.scrollHeight; }
+
+  const sendBtn = document.querySelector('.chat-input-row .btn-primary');
+  if(sendBtn) sendBtn.disabled = true;
+
+  try{
+    const systemPrompt = buildSystemPrompt(currentAgentKey);
+    const resp = await fetch('/api/chat', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({agentKey:currentAgentKey, systemPrompt, messages:agentData.messages})
+    });
+    const json = await resp.json();
+    if(!resp.ok) throw new Error(json.error || 'Request failed');
+
+    agentData.messages.push({role:'assistant', content:json.text, ts:Date.now(), costUsd:json.costUsd||0});
+    recordUsage(json);
+    saveData();
+  }catch(e){
+    agentData.messages.push({role:'assistant', content:'Error: '+e.message, ts:Date.now()});
+    saveData();
+    showToast('AI error: '+e.message);
+  }finally{
+    if(typingWrap && typingWrap.parentNode) typingWrap.remove();
+    if(sendBtn) sendBtn.disabled = false;
+    renderChatMessages();
+    renderAgentList();
+  }
+}
+
+/* ---- Live AI backend integration ---- */
+let backendStatus = null;
+
+async function checkBackendHealth(){
+  try{
+    const resp = await fetch('/api/health', {cache:'no-store'});
+    if(!resp.ok) throw new Error('bad status');
+    backendStatus = await resp.json();
+  }catch(e){
+    backendStatus = {ok:false};
+  }
+  renderBackendBadge();
+}
+
+function renderBackendBadge(){
+  const el = document.getElementById('backendBadge');
+  if(!el) return;
+  if(backendStatus && backendStatus.ok && backendStatus.hasKey){
+    el.className = 'status-badge connected';
+    el.innerHTML = '<span class="dot"></span> AI Connected';
+  } else if(backendStatus && backendStatus.ok){
+    el.className = 'status-badge running';
+    el.innerHTML = '<span class="dot"></span> AI Server (no key)';
+  } else {
+    el.className = 'status-badge';
+    el.innerHTML = '<span class="dot"></span> AI Offline';
+  }
+}
+
+/* ---- Instagram integration ---- */
+let instagramStatus = null;
+
+async function checkInstagramHealth(){
+  try{
+    const resp = await fetch('/api/instagram/health', {cache:'no-store'});
+    if(!resp.ok) throw new Error('bad status');
+    instagramStatus = await resp.json();
+  }catch(e){
+    instagramStatus = {ok:false, connected:false};
+  }
+  renderInstagramBadge();
+}
+
+function renderInstagramBadge(){
+  const el = document.getElementById('instagramBadge');
+  if(!el) return;
+  if(instagramStatus && instagramStatus.connected){
+    el.className = 'status-badge connected';
+    el.innerHTML = '<span class="dot"></span> Instagram (@'+ escapeHtml(instagramStatus.profile ? instagramStatus.profile.username : '') +')';
+  } else {
+    el.className = 'status-badge';
+    el.innerHTML = '<span class="dot"></span> Instagram Offline';
+  }
+}
+
+async function syncFromInstagram(btn){
+  if(!instagramStatus) await checkInstagramHealth();
+  if(!instagramStatus.connected){
+    showToast('Instagram not connected — see INSTAGRAM-SETUP.md');
+    return;
+  }
+  showToast('Syncing from Instagram…');
+  const originalLabel = btn ? btn.innerHTML : null;
+  if(btn){ btn.disabled = true; btn.innerHTML = 'Syncing…'; }
+  try{
+    const resp = await fetch('/api/instagram/sync');
+    const json = await resp.json();
+    if(!resp.ok) throw new Error(json.error || 'Sync failed');
+
+    if(json.profile && typeof json.profile.followersCount === 'number'){
+      const today = new Date().toISOString().slice(0,10);
+      const existing = data.followerHistory.find(h=>h.date===today);
+      if(existing){ existing.count = json.profile.followersCount; }
+      else { data.followerHistory.push({id:data.nextFollowerEntryId++, date:today, count:json.profile.followersCount}); }
+    }
+
+    if(json.accountInsights){
+      data.instagramAccountInsights = {
+        profileViews: json.accountInsights.profileViews,
+        websiteClicks: json.accountInsights.websiteClicks,
+        syncedAt: new Date().toISOString()
+      };
+    }
+
+    let added = 0, updated = 0;
+    (json.media || []).forEach(function(m){
+      if(!m.permalink) return;
+      const existingReel = data.reels.find(r=>r.url===m.permalink);
+      const rec = {
+        date: (m.timestamp||'').slice(0,10) || new Date().toISOString().slice(0,10),
+        caption: m.caption ? m.caption.slice(0,200) : '(no caption)',
+        views: m.views || 0,
+        likes: m.likeCount || 0,
+        comments: m.commentsCount || 0,
+        url: m.permalink,
+        igMediaId: m.id,
+        reach: m.reach,
+        saved: m.saved,
+        avgWatchTimeSec: m.avgWatchTimeSec
+      };
+      if(existingReel){
+        Object.assign(existingReel, rec, {id:existingReel.id});
+        updated++;
+      } else {
+        rec.id = data.nextReelId++;
+        data.reels.push(rec);
+        added++;
+      }
+    });
+
+    saveData();
+    renderAll();
+    showToast('Synced: '+added+' new, '+updated+' updated');
+  }catch(e){
+    showToast('Instagram sync error: ' + e.message);
+  }finally{
+    if(btn){ btn.disabled = false; btn.innerHTML = originalLabel; }
+  }
+}
+
+async function analyzeSentiment(reelId, btn){
+  const reel = data.reels.find(r=>r.id===reelId);
+  if(!reel) return;
+  if(!reel.igMediaId){
+    showToast('This reel wasn\'t synced from Instagram — sync first to analyze comment sentiment.');
+    return;
+  }
+  if(!backendStatus) await checkBackendHealth();
+  if(!backendStatus.ok || !backendStatus.hasKey){
+    showToast('AI backend not connected — see AI-AGENT-SETUP.md');
+    return;
+  }
+  showToast('Analyzing comment sentiment…');
+  if(btn){ btn.disabled = true; btn.innerHTML = 'Analyzing…'; }
+  try{
+    const resp = await fetch('/api/instagram/sentiment/'+reel.igMediaId);
+    const json = await resp.json();
+    if(!resp.ok) throw new Error(json.error || 'Sentiment analysis failed');
+    reel.commentSentiment = json.sentiment;
+    reel.commentSentimentSummary = json.summary;
+    if(json.costUsd) recordUsage(json);
+    saveData();
+    showReelDetail(reel);
+    showToast('Sentiment: ' + json.sentiment);
+  }catch(e){
+    showToast('Sentiment error: ' + e.message);
+    if(btn){ btn.disabled = false; btn.innerHTML = icon('comment',14)+' Analyze Comment Sentiment'; }
+  }
+}
+
+function getBacklogText(){
+  if(!data.ideasBacklog.length) return 'No ideas in the backlog yet — treat this as a blank slate.';
+  return data.ideasBacklog.map(i=>'- ['+stageLabel(i.stage)+'] '+i.text).join('\n');
+}
+function getReelDataText(){
+  const rows = last12Reels();
+  if(!rows.length) return 'No reel data logged yet.';
+
+  const accountLines = [];
+  if(data.instagramAccountInsights){
+    const ai = data.instagramAccountInsights;
+    if(ai.profileViews != null) accountLines.push('Profile views (most recent day): ' + fmtNum(ai.profileViews));
+    if(ai.websiteClicks != null) accountLines.push('Bio link clicks (most recent day): ' + fmtNum(ai.websiteClicks));
+  }
+  const followerNote = 'Current followers: ' + fmtNum(latestFollowerCount()) + ' | Posting streak: ' + computeStreak() + ' days';
+  const header = ['ACCOUNT CONTEXT', followerNote].concat(accountLines).join('\n');
+
+  const reelBlocks = rows.map(function(r){
+    const engagementRate = r.views ? (((r.likes||0)+(r.comments||0))/r.views*100).toFixed(2)+'%' : 'n/a';
+    const saveRate = (r.saved && r.reach) ? ((r.saved/r.reach)*100).toFixed(2)+'%' : 'n/a';
+    return [
+      '- '+r.date+' | "'+r.caption+'"',
+      '  Views: '+fmtNum(r.views)+' | Likes: '+fmtNum(r.likes)+' | Comments: '+fmtNum(r.comments)+
+        (r.reach ? ' | Reach: '+fmtNum(r.reach) : '') + (r.saved ? ' | Saved: '+fmtNum(r.saved) : '') +
+        (r.avgWatchTimeSec ? ' | Avg watch time: '+r.avgWatchTimeSec+'s' : ''),
+      '  Engagement rate: '+engagementRate + (saveRate!=='n/a' ? ' | Save rate: '+saveRate : ''),
+      '  Content type: '+(r.contentType||'—')+' | Hook: '+(r.hook||'—')+' | Format: '+(r.format||'—')+' | Tone: '+(r.captionTone||'—'),
+      '  Hashtags: '+(r.hashtagsUsed||'—')+' | Location tag: '+(r.locationTag||'—')+' | CTA: '+(r.cta||'—'),
+      '  Business outcome: '+(r.inquiries||0)+' inquiries, '+(r.jobsBooked||0)+' jobs booked'+
+        (r.commentSentiment ? ' | Comment sentiment: '+r.commentSentiment+(r.commentSentimentSummary?' ('+r.commentSentimentSummary+')':'') : '')
+    ].join('\n');
+  }).join('\n\n');
+
+  return header + '\n\nREELS (last 12)\n' + reelBlocks;
+}
+
+function ensureUsageMonth(){
+  const mk = new Date().toISOString().slice(0,7);
+  if(!data.usage) data.usage = {monthKey:mk, spendUsd:0, calls:0, capUsd:15};
+  if(data.usage.monthKey !== mk){
+    data.usage.monthKey = mk;
+    data.usage.spendUsd = 0;
+    data.usage.calls = 0;
+  }
+}
+
+function recordUsage(result){
+  ensureUsageMonth();
+  data.usage.spendUsd += Number(result.costUsd || 0);
+  data.usage.calls += 1;
+  saveData();
+  renderUsageSummary();
+  renderSidebarFooter();
+}
+
+function renderSidebarFooter(){
+  const spendEl = document.getElementById('sidebarSpend');
+  if(!spendEl) return;
+  ensureUsageMonth();
+  const spend = data.usage.spendUsd || 0;
+  const cap = data.usage.capUsd || 15;
+  const pct = cap > 0 ? spend / cap : 0;
+  let cls = 'sidebar-spend low';
+  if(pct >= 0.75) cls = 'sidebar-spend high';
+  else if(pct >= 0.4) cls = 'sidebar-spend mid';
+  spendEl.className = cls;
+  spendEl.textContent = 'AI: $' + spend.toFixed(2) + ' this month';
+}
+
+function setIdeaStage(id, stage){
+  const item = data.ideasBacklog.find(i=>i.id===id);
+  if(item && PIPELINE_STAGES.indexOf(stage) > -1){ item.stage = stage; saveData(); renderIdeasPanel(); }
+}
+function deleteBacklogItem(id){
+  data.ideasBacklog = data.ideasBacklog.filter(i=>i.id!==id);
+  saveData();
+  renderIdeasPanel();
+}
+
+/* ============================= SECTION C: REELS / CHART ============================= */
+let reelChartInstance = null;
+let igTrendChartInstance = null;
+
+function renderChart(){
+  const canvas = document.getElementById('reelChart');
+  const fallbackMsg = document.getElementById('chartFallbackMsg');
+  const cur = last12Reels();
+  const wrap = canvas.parentElement;
+  let emptyMsg = wrap.querySelector('.reels-empty-nudge');
+
+  if(!cur.length){
+    canvas.style.display = 'none';
+    fallbackMsg.style.display = 'none';
+    if(!emptyMsg){
+      emptyMsg = document.createElement('div');
+      emptyMsg.className = 'reels-empty-nudge';
+      emptyMsg.style.cssText = 'text-align:center;padding:36px 20px;color:var(--text-dim);';
+      emptyMsg.innerHTML = '<div style="margin-bottom:10px;color:var(--text-faint);">'+icon('reels',28)+'</div>'+
+        '<div style="font-weight:600;margin-bottom:6px;color:var(--text);">No reels logged yet</div>'+
+        '<div style="font-size:13px;margin-bottom:16px;">Add a reel to see your performance chart, or sync from Instagram.</div>'+
+        '<button class="btn btn-primary btn-sm" onclick="openReelForm()">+ Add reel</button>';
+      wrap.appendChild(emptyMsg);
+    }
+    if(reelChartInstance){ reelChartInstance.destroy(); reelChartInstance = null; }
+    return;
+  }
+  if(emptyMsg) emptyMsg.remove();
+
+  if(typeof Chart === 'undefined'){
+    canvas.style.display = 'none';
+    fallbackMsg.style.display = 'block';
+    return;
+  }
+  fallbackMsg.style.display = 'none';
+  canvas.style.display = 'block';
+
+  const labels = cur.map(r => fmtDate(r.date) + ' · ' + (r.caption.length>18 ? r.caption.slice(0,18)+'…' : r.caption));
+  const views = cur.map(r => Number(r.views||0));
+  const colors = chartColors();
+
+  if(reelChartInstance) reelChartInstance.destroy();
+
+  reelChartInstance = new Chart(canvas.getContext('2d'), {
+    type:'bar',
+    data:{
+      labels:labels,
+      datasets:[{
+        label:'Views',
+        data:views,
+        backgroundColor: colors.accent,
+        borderRadius:6,
+        maxBarThickness:46
+      }]
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      plugins:{ legend:{display:false},
+        tooltip:{ callbacks:{ label:(ctx)=> ctx.parsed.y.toLocaleString('en-US') + ' views' } } },
+      scales:{
+        x:{ ticks:{ color: colors.tick, maxRotation:60, minRotation:30, autoSkip:false, font:{size:10} }, grid:{ display:false } },
+        y:{ ticks:{ color: colors.tick }, grid:{ color: colors.grid } }
+      },
+      onClick:(evt, elements)=>{
+        if(!elements.length) return;
+        const idx = elements[0].index;
+        const reel = cur[idx];
+        showReelDetail(reel);
+        if(reel.url) window.open(reel.url, '_blank', 'noopener');
+      }
+    }
+  });
+}
+
+function showReelDetail(reel){
+  const el = document.getElementById('reelDetail');
+  const archiveBits = [reel.contentType, reel.hook, reel.format, reel.captionTone].filter(Boolean);
+  el.innerHTML =
+    '<div class="detail-card">'+
+      '<div class="cap">'+escapeHtml(reel.caption)+'</div>'+
+      '<div class="detail-stats">'+
+        '<span>'+icon('calendar',13)+' '+escapeHtml(reel.date)+'</span>'+
+        '<span>'+icon('eye',13)+' '+fmtNum(reel.views)+' views</span>'+
+        '<span>'+icon('heart',13)+' '+fmtNum(reel.likes)+' likes</span>'+
+        '<span>'+icon('comment',13)+' '+fmtNum(reel.comments)+' comments</span>'+
+        (reel.reach ? '<span>'+icon('signal',13)+' '+fmtNum(reel.reach)+' reach</span>' : '')+
+        (reel.saved ? '<span>'+icon('bookmark',13)+' '+fmtNum(reel.saved)+' saves</span>' : '')+
+        (reel.url ? '<span><a href="'+escapeHtml(reel.url)+'" target="_blank" rel="noopener">Open reel '+icon('externalLink',12)+'</a></span>' : '')+
+      '</div>'+
+      (archiveBits.length ? '<div class="detail-stats" style="margin-top:8px;">'+archiveBits.map(b=>'<span>'+icon('tag',13)+' '+escapeHtml(b)+'</span>').join('')+'</div>' : '')+
+      ((reel.inquiries || reel.jobsBooked) ? '<div class="detail-stats" style="margin-top:8px;"><span>'+icon('mail',13)+' '+fmtNum(reel.inquiries||0)+' inquiries</span><span>'+icon('checkCircle',13)+' '+fmtNum(reel.jobsBooked||0)+' jobs booked</span></div>' : '')+
+      (reel.commentSentiment ? '<div class="detail-stats" style="margin-top:8px;"><span>'+icon('comment',13)+' Sentiment: '+escapeHtml(reel.commentSentiment)+(reel.commentSentimentSummary ? ' — '+escapeHtml(reel.commentSentimentSummary) : '')+'</span></div>' : '')+
+      '<div style="margin-top:10px;"><button class="btn btn-sm" onclick="analyzeSentiment('+reel.id+',this)">'+icon('comment',14)+' Analyze Comment Sentiment</button></div>'+
+    '</div>';
+}
+
+function renderReelTable(){
+  const tbody = document.getElementById('reelTableBody');
+  const rows = sortedReels().reverse();
+  if(!rows.length){
+    tbody.innerHTML = '<tr><td colspan="7" class="empty-note" style="padding:16px 0;">No reels logged yet. Click "Add reel" to get started.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = rows.map(function(r){
+    return '<tr>'+
+      '<td>'+escapeHtml(r.date)+'</td>'+
+      '<td class="truncate" title="'+escapeHtml(r.caption)+'">'+escapeHtml(r.caption)+'</td>'+
+      '<td class="truncate" style="max-width:130px;">'+(r.contentType?escapeHtml(r.contentType):'<span class="empty-note">—</span>')+'</td>'+
+      '<td class="num">'+fmtNum(r.views)+'</td>'+
+      '<td class="num">'+fmtNum(r.likes)+'</td>'+
+      '<td class="num">'+fmtNum(r.comments)+'</td>'+
+      '<td><div class="row-actions">'+
+        '<button class="icon-btn" onclick="openReelForm('+r.id+')" title="Edit">'+icon('edit',13)+'</button>'+
+        '<button class="icon-btn" onclick="deleteReel('+r.id+')" title="Delete">'+icon('trash',13)+'</button>'+
+      '</div></td>'+
+    '</tr>';
+  }).join('');
+}
+
+function selectOptions(list, current){
+  return '<option value="">—</option>' + list.map(function(o){
+    return '<option value="'+escapeHtml(o)+'"'+(o===current?' selected':'')+'>'+escapeHtml(o)+'</option>';
+  }).join('');
+}
+
+function openReelForm(id){
+  const editing = !!id;
+  const reel = editing ? data.reels.find(r=>r.id===id) : {date:'',caption:'',views:'',likes:'',comments:'',url:'',contentType:'',hook:'',format:'Reel',captionTone:'',hashtagsUsed:'',locationTag:'',cta:'',inquiries:0,jobsBooked:0};
+  openModal(
+    '<div class="modal-header"><div class="modal-title">'+(editing?'Edit Reel':'Add Reel')+'</div><button class="modal-close" onclick="closeModal()">'+icon('x',16)+'</button></div>'+
+    '<div class="modal-body">'+
+      '<div class="form-grid">'+
+        '<div class="field"><label>Date</label><input type="date" id="f_date" value="'+escapeHtml(reel.date)+'"/></div>'+
+        '<div class="field"><label>Views</label><input type="number" id="f_views" value="'+escapeHtml(reel.views)+'"/></div>'+
+        '<div class="field full"><label>Caption</label><input type="text" id="f_caption" value="'+escapeHtml(reel.caption)+'" placeholder="e.g. Before/after streak-free windows"/></div>'+
+        '<div class="field"><label>Likes</label><input type="number" id="f_likes" value="'+escapeHtml(reel.likes)+'"/></div>'+
+        '<div class="field"><label>Comments</label><input type="number" id="f_comments" value="'+escapeHtml(reel.comments)+'"/></div>'+
+        '<div class="field full"><label>Reel URL</label><input type="text" id="f_url" value="'+escapeHtml(reel.url)+'" placeholder="https://www.instagram.com/reel/..."/></div>'+
+      '</div>'+
+      '<hr style="border-color:var(--border);margin:18px 0;"/>'+
+      '<div class="label" style="margin-bottom:12px;">Content Archive</div>'+
+      '<div class="form-grid">'+
+        '<div class="field"><label>Content Type</label><select id="f_contentType">'+selectOptions(CONTENT_TYPES, reel.contentType)+'</select></div>'+
+        '<div class="field"><label>Hook / Angle</label><select id="f_hook">'+selectOptions(HOOK_ANGLES, reel.hook)+'</select></div>'+
+        '<div class="field"><label>Format</label><select id="f_format">'+selectOptions(MEDIA_FORMATS, reel.format)+'</select></div>'+
+        '<div class="field"><label>Caption Tone</label><select id="f_captionTone">'+selectOptions(CAPTION_TONES, reel.captionTone)+'</select></div>'+
+        '<div class="field"><label>Hashtags Used</label><input type="text" id="f_hashtagsUsed" value="'+escapeHtml(reel.hashtagsUsed)+'" placeholder="#windowcleaning #miami"/></div>'+
+        '<div class="field"><label>Location Tag</label><input type="text" id="f_locationTag" value="'+escapeHtml(reel.locationTag)+'" placeholder="Miami, FL"/></div>'+
+        '<div class="field full"><label>Call To Action</label><input type="text" id="f_cta" value="'+escapeHtml(reel.cta)+'" placeholder="e.g. DM for a free quote"/></div>'+
+      '</div>'+
+      '<hr style="border-color:var(--border);margin:18px 0;"/>'+
+      '<div class="label" style="margin-bottom:12px;">Business Outcome</div>'+
+      '<div class="form-grid">'+
+        '<div class="field"><label>Inquiries From This Post</label><input type="number" id="f_inquiries" value="'+escapeHtml(reel.inquiries||0)+'"/></div>'+
+        '<div class="field"><label>Jobs Booked From This Post</label><input type="number" id="f_jobsBooked" value="'+escapeHtml(reel.jobsBooked||0)+'"/></div>'+
+      '</div>'+
+      '<div class="form-actions"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveReelForm('+(editing?id:'null')+')">'+(editing?'Save Changes':'Add Reel')+'</button></div>'+
+    '</div>',
+    {wide:true}
+  );
+}
+
+function saveReelForm(id){
+  const rec = {
+    date: document.getElementById('f_date').value || new Date().toISOString().slice(0,10),
+    caption: document.getElementById('f_caption').value || 'Untitled reel',
+    views: Number(document.getElementById('f_views').value) || 0,
+    likes: Number(document.getElementById('f_likes').value) || 0,
+    comments: Number(document.getElementById('f_comments').value) || 0,
+    url: document.getElementById('f_url').value || '',
+    contentType: document.getElementById('f_contentType').value || '',
+    hook: document.getElementById('f_hook').value || '',
+    format: document.getElementById('f_format').value || '',
+    captionTone: document.getElementById('f_captionTone').value || '',
+    hashtagsUsed: document.getElementById('f_hashtagsUsed').value || '',
+    locationTag: document.getElementById('f_locationTag').value || '',
+    cta: document.getElementById('f_cta').value || '',
+    inquiries: Number(document.getElementById('f_inquiries').value) || 0,
+    jobsBooked: Number(document.getElementById('f_jobsBooked').value) || 0
+  };
+  if(id){
+    const idx = data.reels.findIndex(r=>r.id===id);
+    if(idx>-1) data.reels[idx] = Object.assign({id:id}, rec);
+  } else {
+    rec.id = data.nextReelId++;
+    data.reels.push(rec);
+  }
+  saveData();
+  closeModal();
+  renderAll();
+  showToast(id ? 'Reel updated' : 'Reel added');
+}
+
+function deleteReel(id){
+  data.reels = data.reels.filter(r=>r.id!==id);
+  saveData();
+  renderAll();
+  showToast('Reel deleted');
+}
+
+function clearSampleData(){
+  if(!confirm('This will remove all reels currently logged. Continue?')) return;
+  data.reels = [];
+  saveData();
+  renderAll();
+  showToast('Reel data cleared');
+}
+
+/* ---- Publish to Instagram ---- */
+function openPublishReelForm(){
+  const savedHookReply = lastAgentReply('hook');
+  let suggestedCaption = '';
+  const match = savedHookReply.match(/## CAPTION\s*\n([\s\S]*?)(\n##|$)/i);
+  if(match) suggestedCaption = match[1].trim();
+
+  openModal(
+    '<div class="modal-header"><div class="modal-title">'+icon('upload',16)+' Publish Reel to Instagram</div><button class="modal-close" onclick="closeModal()">'+icon('x',16)+'</button></div>'+
+    '<div class="modal-body">'+
+      '<div class="empty-note" style="margin-bottom:14px;">Uploads your video to Cloudinary (for hosting), then publishes it as a Reel via the Instagram API. This can take 1–3 minutes while Instagram processes the video — leave this window open.</div>'+
+      '<div class="field" style="margin-bottom:14px;"><label>Video File</label><input type="file" id="pub_video" accept="video/*"/></div>'+
+      '<div class="field" style="margin-bottom:14px;"><label>Caption</label><textarea id="pub_caption" rows="4" placeholder="Caption + hashtags...">'+escapeHtml(suggestedCaption)+'</textarea></div>'+
+      '<div id="publishStatus" class="empty-note"></div>'+
+      '<div class="form-actions"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn btn-primary" id="publishBtn" onclick="submitPublishReel()">Publish</button></div>'+
+    '</div>'
+  );
+}
+
+async function submitPublishReel(){
+  if(!instagramStatus) await checkInstagramHealth();
+  if(!instagramStatus.connected){
+    showToast('Instagram not connected — see INSTAGRAM-SETUP.md');
+    return;
+  }
+
+  const fileInput = document.getElementById('pub_video');
+  const captionInput = document.getElementById('pub_caption');
+  const statusEl = document.getElementById('publishStatus');
+  const btn = document.getElementById('publishBtn');
+
+  if(!fileInput.files.length){
+    showToast('Choose a video file first');
+    return;
+  }
+
+  const file = fileInput.files[0];
+  const caption = captionInput.value || '';
+
+  btn.disabled = true;
+  btn.textContent = 'Publishing…';
+  statusEl.textContent = 'Uploading and publishing — this can take 1–3 minutes while Instagram processes the video. Do not close this window.';
+
+  try{
+    const formData = new FormData();
+    formData.append('video', file);
+    formData.append('caption', caption);
+
+    const resp = await fetch('/api/instagram/publish', { method:'POST', body:formData });
+    const json = await resp.json();
+    if(!resp.ok) throw new Error(json.error || 'Publish failed');
+
+    data.reels.push({
+      id: data.nextReelId++,
+      date: new Date().toISOString().slice(0,10),
+      caption: caption.slice(0,200) || '(no caption)',
+      views: 0,
+      likes: 0,
+      comments: 0,
+      url: json.permalink || ''
+    });
+    saveData();
+    closeModal();
+    renderAll();
+    showToast('Published to Instagram!');
+  }catch(e){
+    statusEl.textContent = 'Error: ' + e.message;
+    btn.disabled = false;
+    btn.textContent = 'Publish';
+  }
+}
+
+/* ============================= SECTION D: COMPETITORS ============================= */
+function myAvgViews(){
+  const cur = last12Reels();
+  if(!cur.length) return null;
+  return cur.reduce((s,r)=>s+Number(r.views||0),0) / cur.length;
+}
+function competitorAvgViews(c){
+  if(!c.posts.length) return null;
+  return c.posts.reduce((s,p)=>s+Number(p.views||0),0) / c.posts.length;
+}
+
+function renderCompetitors(){
+  const grid = document.getElementById('competitorGrid');
+  if(!data.competitors.length){
+    grid.innerHTML = '<div class="stat-card" style="grid-column:1/-1;text-align:center;padding:32px 20px;">'+
+      '<div style="margin-bottom:10px;color:var(--text-faint);">'+icon('competitors',28)+'</div>'+
+      '<div style="font-weight:600;margin-bottom:6px;color:var(--text);">No competitors tracked yet</div>'+
+      '<div style="font-size:13px;color:var(--text-dim);margin-bottom:16px;">Add a competitor to benchmark your avg views and follower count against theirs.</div>'+
+      '<button class="btn btn-primary btn-sm" onclick="openCompetitorForm()">+ Add competitor</button>'+
+    '</div>';
+    renderLeaderboard();
+    return;
+  }
+  grid.innerHTML = data.competitors.map(function(c){
+    const avg = competitorAvgViews(c);
+    return '<div class="competitor-card">'+
+      '<h3>'+escapeHtml(c.name)+'</h3>'+
+      '<div class="handle"><a href="'+escapeHtml(c.url)+'" target="_blank" rel="noopener">'+escapeHtml(c.handle)+'</a></div>'+
+      '<div class="competitor-meta"><span>'+icon('users',13)+' '+fmtNum(c.followers)+' followers</span><span>Avg views: '+(avg?fmtNum(avg):'—')+'</span></div>'+
+      '<div>'+ (c.posts.length ? c.posts.map(postMini).join('') : '<div class="empty-note" style="margin-bottom:8px;">No top posts logged yet.</div>') +'</div>'+
+      '<div style="display:flex;gap:8px;">'+
+        '<button class="btn btn-sm" onclick="openTopPostForm('+c.id+')">+ Add top post</button>'+
+        '<button class="btn btn-sm" onclick="editCompetitor('+c.id+')">'+icon('edit',13)+' Edit</button>'+
+        '<button class="btn btn-sm btn-danger" onclick="deleteCompetitor('+c.id+')">Delete</button>'+
+      '</div>'+
+    '</div>';
+  }).join('');
+  renderLeaderboard();
+}
+
+function postMini(p){
+  return '<div class="post-mini">'+
+    '<div><a href="'+escapeHtml(p.url)+'" target="_blank" rel="noopener">Post '+icon('externalLink',12)+'</a> <span class="pv">· '+fmtNum(p.views)+' views</span></div>'+
+    (p.hook ? '<div><strong>Hook:</strong> '+escapeHtml(p.hook)+'</div>' : '')+
+    (p.script ? '<div><strong>Script:</strong> '+escapeHtml(p.script)+'</div>' : '')+
+    (p.idea ? '<div><strong>Idea:</strong> '+escapeHtml(p.idea)+'</div>' : '')+
+  '</div>';
+}
+
+function renderLeaderboard(){
+  const el = document.getElementById('leaderboard');
+  const my = myAvgViews();
+  const competitorEntries = data.competitors.map(c=>({name:c.name, avg:competitorAvgViews(c), mine:false}));
+  const allNull = my === null && competitorEntries.every(e=>e.avg===null);
+  if(allNull){
+    el.innerHTML = '<div style="color:var(--text-faint);font-size:13px;padding:10px 0;">Add a competitor to see how you rank.</div>';
+    return;
+  }
+  const entries = [{name:(data.settings.businessName||'Me')+' (you)', avg:my, mine:true}].concat(competitorEntries);
+  const max = Math.max(1, ...entries.map(e=>e.avg||0));
+  el.innerHTML = entries.map(function(e){
+    const pct = e.avg ? Math.round((e.avg/max)*100) : 0;
+    return '<div class="leaderboard-row"><div style="width:150px;">'+escapeHtml(e.name)+'</div>'+
+      '<div class="leaderboard-bar-bg"><div class="leaderboard-bar'+(e.mine?' me':'')+'" style="width:'+pct+'%;"></div></div>'+
+      '<div style="width:70px;text-align:right;">'+(e.avg?fmtNum(e.avg):'—')+'</div></div>';
+  }).join('');
+}
+
+function openCompetitorForm(id){
+  const editing = !!id;
+  const c = editing ? data.competitors.find(x=>x.id===id) : {name:'',handle:'',url:'',followers:''};
+  openModal(
+    '<div class="modal-header"><div class="modal-title">'+(editing?'Edit Competitor':'Add Competitor')+'</div><button class="modal-close" onclick="closeModal()">'+icon('x',16)+'</button></div>'+
+    '<div class="modal-body">'+
+      '<div class="form-grid">'+
+        '<div class="field full"><label>Name</label><input type="text" id="c_name" value="'+escapeHtml(c.name)+'" placeholder="Competitor Name"/></div>'+
+        '<div class="field"><label>Handle</label><input type="text" id="c_handle" value="'+escapeHtml(c.handle)+'" placeholder="@handle"/></div>'+
+        '<div class="field"><label>Followers</label><input type="number" id="c_followers" value="'+escapeHtml(c.followers)+'"/></div>'+
+        '<div class="field full"><label>Profile URL</label><input type="text" id="c_url" value="'+escapeHtml(c.url)+'" placeholder="https://www.instagram.com/handle/"/></div>'+
+      '</div>'+
+      '<div class="form-actions"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveCompetitorForm('+(editing?id:'null')+')">'+(editing?'Save Changes':'Add Competitor')+'</button></div>'+
+    '</div>'
+  );
+}
+function editCompetitor(id){ openCompetitorForm(id); }
+function saveCompetitorForm(id){
+  const rec = {
+    name: document.getElementById('c_name').value || 'Unnamed Competitor',
+    handle: document.getElementById('c_handle').value || '@handle',
+    followers: Number(document.getElementById('c_followers').value) || 0,
+    url: document.getElementById('c_url').value || ''
+  };
+  if(id){
+    const idx = data.competitors.findIndex(c=>c.id===id);
+    if(idx>-1) data.competitors[idx] = Object.assign({}, data.competitors[idx], rec);
+  } else {
+    rec.id = data.nextCompetitorId++;
+    rec.posts = [];
+    data.competitors.push(rec);
+  }
+  saveData();
+  closeModal();
+  renderCompetitors();
+  showToast('Competitor saved');
+}
+function deleteCompetitor(id){
+  if(!confirm('Delete this competitor and all its logged posts?')) return;
+  data.competitors = data.competitors.filter(c=>c.id!==id);
+  saveData();
+  renderCompetitors();
+}
+
+const EXTRACTION_PROMPT_TEMPLATE = function(s){
+  return 'I\'m going to describe or transcribe a competitor\'s Instagram Reel to you (a window cleaning / home-service competitor).\n\n'+
+  'Extract three things from it:\n'+
+  '1. HOOK — the exact opening line/visual and why it works\n'+
+  '2. SCRIPT STRUCTURE — the beat-by-beat structure they used (hook, build, payoff, CTA)\n'+
+  '3. CORE IDEA — the underlying content idea/format, stripped of their specific branding\n\n'+
+  'Then adapt all three for a window cleaning business called '+s.businessName+' (Instagram: '+s.handle+') — rewrite the hook, restructure the script for our brand voice, and restate the idea as something we could film with our own crew and jobs.\n\n'+
+  'Competitor reel to analyze:\n[paste description/transcript here]';
+};
+
+function openTopPostForm(competitorId){
+  openModal(
+    '<div class="modal-header"><div class="modal-title">Add Top Post</div><button class="modal-close" onclick="closeModal()">'+icon('x',16)+'</button></div>'+
+    '<div class="modal-body">'+
+      '<div class="prompt-label-row"><span class="label">Extraction Prompt</span><button class="btn btn-primary btn-sm" onclick="copyText(EXTRACTION_PROMPT_TEMPLATE(data.settings))">'+icon('clipboard',13)+' Copy extraction prompt</button></div>'+
+      '<pre class="prompt-box" style="margin-bottom:16px;">'+escapeHtml(EXTRACTION_PROMPT_TEMPLATE(data.settings))+'</pre>'+
+      '<div class="form-grid">'+
+        '<div class="field full"><label>Post URL</label><input type="text" id="p_url" placeholder="https://www.instagram.com/reel/..."/></div>'+
+        '<div class="field"><label>Views</label><input type="number" id="p_views" value="0"/></div>'+
+        '<div class="field full"><label>Extracted Hook</label><textarea id="p_hook" rows="2" placeholder="Paste the extracted hook here"></textarea></div>'+
+        '<div class="field full"><label>Extracted Script Summary</label><textarea id="p_script" rows="2" placeholder="Paste the extracted script structure here"></textarea></div>'+
+        '<div class="field full"><label>Extracted Idea</label><textarea id="p_idea" rows="2" placeholder="Paste the extracted core idea here"></textarea></div>'+
+      '</div>'+
+      '<div class="form-actions"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveTopPost('+competitorId+')">Save Post</button></div>'+
+    '</div>',
+    {wide:true}
+  );
+}
+function saveTopPost(competitorId){
+  const c = data.competitors.find(x=>x.id===competitorId);
+  if(!c) return;
+  c.posts.push({
+    id: data.nextPostId++,
+    url: document.getElementById('p_url').value || '',
+    views: Number(document.getElementById('p_views').value) || 0,
+    hook: document.getElementById('p_hook').value || '',
+    script: document.getElementById('p_script').value || '',
+    idea: document.getElementById('p_idea').value || ''
+  });
+  saveData();
+  closeModal();
+  renderCompetitors();
+  showToast('Top post added');
+}
+
+/* ============================= SECTION E: MORNING BRIEF ============================= */
+function getTopPipelineIdea(){
+  // Prefer whatever is furthest along (closest to camera-ready), skipping launched/scrapped.
+  const priority = ['stage3','stage2','stage1','idea'];
+  for(let p=0;p<priority.length;p++){
+    const match = data.ideasBacklog.find(i=>i.stage===priority[p]);
+    if(match) return match;
+  }
+  return null;
+}
+function getTodayIdeaText(){
+  const top = getTopPipelineIdea();
+  if(top) return '['+stageLabel(top.stage)+'] '+top.text;
+  if(data.ideasBacklog.length) return 'Everything in the backlog is Launched or Scrapped — add new ideas in the Ideas Agent.';
+  return 'No ideas in the backlog yet — run the Ideas Agent and add results to the backlog.';
+}
+function getHookScriptText(){
+  const reply = lastAgentReply('hook').trim();
+  if(!reply) return 'No hook/script yet — chat with the Hook & Script Agent to generate one.';
+  return reply.length > 500 ? reply.slice(0,500) + '…' : reply;
+}
+function getLatestReelText(){
+  const s = sortedReels();
+  if(!s.length) return 'No reels logged yet.';
+  const r = s[s.length-1];
+  return '"'+r.caption+'" — '+fmtNum(r.views)+' views, '+fmtNum(r.likes)+' likes, '+fmtNum(r.comments)+' comments ('+r.date+')';
+}
+function getAnalystInsightText(){
+  const reply = lastAgentReply('analyst').trim();
+  if(!reply) return 'No analyst insight yet — chat with the Analyst Agent to generate one.';
+  const firstLine = reply.split('\n').map(l=>l.trim()).filter(Boolean)[0];
+  return firstLine || reply.slice(0,200);
+}
+
+function openMorningBriefModal(){
+  renderMorningBriefModal();
+}
+function renderMorningBriefModal(){
+  const idea = getTodayIdeaText();
+  const hook = getHookScriptText();
+  const latest = getLatestReelText();
+  const insight = getAnalystInsightText();
+  const dateStr = new Date().toLocaleDateString('en-US',{weekday:'long', month:'short', day:'numeric', year:'numeric'});
+
+  openModal(
+    '<div class="modal-header"><div class="modal-title">'+icon('sun',16)+' Morning Brief</div><button class="modal-close" onclick="closeModal()">'+icon('x',16)+'</button></div>'+
+    '<div class="modal-body">'+
+      '<div class="brief-card">'+
+        '<div style="color:var(--text-dim);font-size:12.5px;margin-bottom:14px;">'+dateStr+' · '+escapeHtml(data.settings.businessName)+'</div>'+
+        '<div class="brief-block"><h4>'+icon('zap',14)+' Today\'s Idea</h4><p>'+escapeHtml(idea)+'</p></div>'+
+        '<div class="brief-block"><h4>'+icon('film',14)+' Hook & Script</h4><p>'+escapeHtml(hook)+'</p></div>'+
+        '<div class="brief-block"><h4>'+icon('overview',14)+' Latest Reel</h4><p>'+escapeHtml(latest)+'</p></div>'+
+        '<div class="brief-block"><h4>'+icon('search',14)+' Analyst Insight</h4><p>'+escapeHtml(insight)+'</p></div>'+
+      '</div>'+
+      '<div class="form-actions">'+
+        '<button class="btn" onclick="advanceTopIdea()">Advance to next stage</button>'+
+        '<button class="btn btn-primary" onclick="copyMorningBrief()">'+icon('clipboard',13)+' Copy as text</button>'+
+      '</div>'+
+    '</div>',
+    {wide:true}
+  );
+}
+function advanceTopIdea(){
+  const top = getTopPipelineIdea();
+  if(!top) return;
+  const idx = PIPELINE_STAGES.indexOf(top.stage);
+  const next = PIPELINE_STAGES[Math.min(idx+1, PIPELINE_STAGES.indexOf('launched'))];
+  top.stage = next;
+  saveData();
+  renderMorningBriefModal();
+  if(document.getElementById('ideasPanelList')) renderIdeasPanel();
+  showToast('Moved to '+stageLabel(next));
+}
+function buildMorningBriefText(){
+  const dateStr = new Date().toLocaleDateString('en-US',{weekday:'long', month:'short', day:'numeric', year:'numeric'});
+  return 'MORNING BRIEF — '+data.settings.businessName+'\n'+
+  dateStr+'\n\n'+
+  'TODAY\'S IDEA\n'+getTodayIdeaText()+'\n\n'+
+  'HOOK & SCRIPT\n'+getHookScriptText()+'\n\n'+
+  'LATEST REEL\n'+getLatestReelText()+'\n\n'+
+  'ANALYST INSIGHT\n'+getAnalystInsightText()+'\n\n'+
+  'Let\'s get one posted today.';
+}
+function copyMorningBrief(){
+  copyText(buildMorningBriefText());
+}
+
+/* ============================= SETTINGS / EXPORT / IMPORT ============================= */
+function openSettingsModal(){
+  openModal(
+    '<div class="modal-header"><div class="modal-title">'+icon('settings',16)+' Settings</div><button class="modal-close" onclick="closeModal()">'+icon('x',16)+'</button></div>'+
+    '<div class="modal-body">'+
+      '<div class="field" style="margin-bottom:12px;"><label>Business Name</label><input type="text" id="set_name" value="'+escapeHtml(data.settings.businessName)+'"/></div>'+
+      '<div class="field" style="margin-bottom:12px;"><label>Instagram Handle</label><input type="text" id="set_handle" value="'+escapeHtml(data.settings.handle)+'" placeholder="@yourhandle"/></div>'+
+      '<div class="field" style="margin-bottom:18px;"><label>Posting Goal</label><input type="text" id="set_goal" value="'+escapeHtml(data.settings.postingGoal)+'" placeholder="e.g. 1 reel per day"/></div>'+
+      '<div class="field" style="margin-bottom:18px;max-width:200px;"><label>Theme</label><select id="set_theme">'+
+        '<option value="light"'+(data.settings.theme==='light'?' selected':'')+'>Light</option>'+
+        '<option value="dark"'+(data.settings.theme==='dark'?' selected':'')+'>Dark</option>'+
+      '</select></div>'+
+      '<div class="form-grid" style="margin-bottom:18px;">'+
+        '<div class="field"><label>Stretch Follower Goal</label><input type="number" id="set_stretch_goal" value="'+escapeHtml(data.settings.stretchGoal)+'"/></div>'+
+        '<div class="field"><label>Realistic Follower Goal</label><input type="number" id="set_realistic_goal" value="'+escapeHtml(data.settings.realisticGoal)+'"/></div>'+
+        '<div class="field full"><label>Goal Deadline</label><input type="date" id="set_goal_deadline" value="'+escapeHtml(data.settings.goalDeadline)+'"/></div>'+
+      '</div>'+
+      '<div class="form-actions" style="margin-bottom:22px;"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveSettings()">Save Settings</button></div>'+
+      '<hr style="border-color:var(--border);margin:18px 0;"/>'+
+      '<div class="label" style="margin-bottom:10px;">AI Usage</div>'+
+      '<div id="usageSummary" style="margin-bottom:14px;"></div>'+
+      '<div class="field" style="max-width:200px;margin-bottom:22px;"><label>Monthly Spend Cap (USD)</label><input type="number" id="set_cap" value="'+escapeHtml(data.usage.capUsd)+'" onchange="updateUsageCap(this.value)"/></div>'+
+      '<hr style="border-color:var(--border);margin:18px 0;"/>'+
+      '<div class="label" style="margin-bottom:10px;">Data Management</div>'+
+      '<div style="display:flex;gap:10px;flex-wrap:wrap;">'+
+        '<button class="btn" onclick="exportData()">'+icon('download',13)+' Export data.json</button>'+
+        '<button class="btn" onclick="document.getElementById(\'importFileInput\').click()">'+icon('upload',13)+' Import data.json</button>'+
+        '<input type="file" id="importFileInput" accept="application/json" style="display:none;" onchange="importDataFile(this.files[0])"/>'+
+      '</div>'+
+    '</div>'
+  );
+  renderUsageSummary();
+}
+function saveSettings(){
+  data.settings.businessName = document.getElementById('set_name').value || 'Coast Window Cleaning';
+  data.settings.handle = document.getElementById('set_handle').value || '@CHANGE_ME';
+  data.settings.postingGoal = document.getElementById('set_goal').value || '1 reel per day';
+  data.settings.stretchGoal = Number(document.getElementById('set_stretch_goal').value) || 200000;
+  data.settings.realisticGoal = Number(document.getElementById('set_realistic_goal').value) || 15000;
+  data.settings.goalDeadline = document.getElementById('set_goal_deadline').value || '2026-12-31';
+  data.settings.theme = document.getElementById('set_theme').value || 'light';
+  document.documentElement.setAttribute('data-theme', data.settings.theme);
+  renderThemeToggleIcon();
+  saveData();
+  closeModal();
+  renderAll();
+  showToast('Settings saved');
+}
+function updateUsageCap(val){
+  ensureUsageMonth();
+  data.usage.capUsd = Number(val) || 15;
+  saveData();
+  renderUsageSummary();
+}
+function renderUsageSummary(){
+  const el = document.getElementById('usageSummary');
+  if(!el) return;
+  ensureUsageMonth();
+  const pct = Math.min(100, Math.round((data.usage.spendUsd / (data.usage.capUsd||15)) * 100));
+  el.innerHTML = '<div style="font-size:13.5px;margin-bottom:6px;">This month: <strong>$'+data.usage.spendUsd.toFixed(4)+'</strong> across '+data.usage.calls+' call'+(data.usage.calls===1?'':'s')+' (cap $'+Number(data.usage.capUsd).toFixed(2)+')</div>'+
+    '<div class="leaderboard-bar-bg"><div class="leaderboard-bar'+(pct>=100?'':' me')+'" style="width:'+pct+'%;"></div></div>';
+}
+function exportData(){
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'data.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('Exported data.json');
+}
+function importDataFile(file){
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e){
+    try{
+      const parsed = JSON.parse(e.target.result);
+      if(!parsed || typeof parsed !== 'object' || !Array.isArray(parsed.reels)){
+        throw new Error('File does not look like a valid data.json export.');
+      }
+      data = mergeWithDefaults(parsed);
+      saveData();
+      closeModal();
+      renderAll();
+      showToast('Data imported');
+    }catch(err){
+      alert('Could not import file: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+}
+
+/* ============================= OVERVIEW: IG STATS ============================= */
+function renderIgStats(){
+  const grid = document.getElementById('igStatGrid');
+  if(!grid) return;
+  const cur = last12Reels();
+
+  let totalReach = 0, reachCount = 0;
+  let totalSaved = 0, savedCount = 0;
+  let totalWatch = 0, watchCount = 0;
+
+  cur.forEach(function(r){
+    if(r.reach != null){ totalReach += Number(r.reach||0); reachCount++; }
+    if(r.saved != null){ totalSaved += Number(r.saved||0); savedCount++; }
+    if(r.avgWatchTimeSec != null){ totalWatch += Number(r.avgWatchTimeSec||0); watchCount++; }
+  });
+
+  const ai = data.instagramAccountInsights || {};
+  const syncedLabel = ai.syncedAt ? 'as of '+fmtDate(ai.syncedAt.slice(0,10)) : 'Sync from Instagram';
+
+  const cards = [
+    {label:'Total Reach (last 12)', value:reachCount?fmtNum(totalReach):'—', sub:reachCount?reachCount+' reels synced':'Sync from Instagram'},
+    {label:'Total Saves (last 12)', value:savedCount?fmtNum(totalSaved):'—', sub:savedCount?savedCount+' reels synced':'Sync from Instagram'},
+    {label:'Avg Watch Time', value:watchCount?Math.round(totalWatch/watchCount)+'s':'—', sub:watchCount?watchCount+' reels':'Reels with data only'},
+    {label:'Profile Views (latest day)', value:ai.profileViews!=null?fmtNum(ai.profileViews):'—', sub:syncedLabel},
+    {label:'Bio Link Clicks (latest day)', value:ai.websiteClicks!=null?fmtNum(ai.websiteClicks):'—', sub:syncedLabel}
+  ];
+
+  const allDash = cards.every(function(c){ return c.value === '—'; });
+  if(allDash){
+    grid.innerHTML = '<div class="stat-card" style="grid-column:1/-1;text-align:center;padding:28px 20px;">'+
+      '<div style="margin-bottom:10px;color:var(--text-faint);">'+icon('activity',24)+'</div>'+
+      '<div style="font-weight:600;margin-bottom:6px;color:var(--text);">Connect Instagram to see real analytics</div>'+
+      '<div style="font-size:13px;color:var(--text-dim);margin-bottom:14px;">Reach, saves, watch time, profile views and bio link clicks all come from the Instagram API.</div>'+
+      '<button class="btn btn-primary btn-sm" onclick="syncFromInstagram(this)"><svg class="ic" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg> Sync from Instagram</button>'+
+    '</div>';
+    const trendPanel = document.getElementById('igTrendPanel');
+    if(trendPanel) trendPanel.style.display = 'none';
+    return;
+  }
+  grid.innerHTML = cards.map(function(c){
+    return '<div class="stat-card"><div class="stat-label">'+c.label+'</div><div class="stat-value small">'+c.value+'</div><div class="stat-sub">'+escapeHtml(c.sub)+'</div></div>';
+  }).join('');
+
+  renderIgTrendChart(cur, reachCount>0, savedCount>0, watchCount>0);
+}
+
+function renderIgTrendChart(cur, hasReach, hasSaved, hasWatch){
+  const trendPanel = document.getElementById('igTrendPanel');
+  const canvas = document.getElementById('igTrendChart');
+  if(!trendPanel || !canvas) return;
+  if((!hasReach && !hasSaved && !hasWatch) || typeof Chart === 'undefined'){
+    trendPanel.style.display = 'none';
+    if(igTrendChartInstance){ igTrendChartInstance.destroy(); igTrendChartInstance = null; }
+    return;
+  }
+  trendPanel.style.display = 'block';
+  const colors = chartColors();
+  const labels = cur.map(r=>fmtDate(r.date));
+  const datasets = [];
+  if(hasReach) datasets.push({
+    label:'Reach', data: cur.map(r=>r.reach!=null?r.reach:null), borderColor: colors.accent,
+    backgroundColor:'transparent', tension:0.25, pointRadius:3, yAxisID:'y', spanGaps:true
+  });
+  if(hasSaved) datasets.push({
+    label:'Saved', data: cur.map(r=>r.saved!=null?r.saved:null), borderColor: colors.green,
+    backgroundColor:'transparent', tension:0.25, pointRadius:3, yAxisID:'y', spanGaps:true
+  });
+  if(hasWatch) datasets.push({
+    label:'Avg Watch Time (s)', data: cur.map(r=>r.avgWatchTimeSec!=null?r.avgWatchTimeSec:null), borderColor: colors.amber,
+    backgroundColor:'transparent', tension:0.25, pointRadius:3, borderDash:[5,3], yAxisID:'y1', spanGaps:true
+  });
+
+  if(igTrendChartInstance) igTrendChartInstance.destroy();
+  igTrendChartInstance = new Chart(canvas.getContext('2d'), {
+    type:'line',
+    data:{ labels: labels, datasets: datasets },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      plugins:{ legend:{display:true, position:'bottom', labels:{color:colors.tick, boxWidth:12, font:{size:11}}} },
+      scales:{
+        x:{ ticks:{ color: colors.tick, font:{size:10}, maxRotation:45, minRotation:0 }, grid:{ display:false } },
+        y:{ position:'left', ticks:{ color: colors.tick }, grid:{ color: colors.grid }, title:{display:(hasReach||hasSaved), text:'Reach / Saves', color:colors.tick, font:{size:10}} },
+        y1:{ position:'right', display:hasWatch, ticks:{ color: colors.tick }, grid:{ display:false }, title:{display:hasWatch, text:'Watch time (s)', color:colors.tick, font:{size:10}} }
+      }
+    }
+  });
+}
+
+/* ============================= RENDER ALL ============================= */
+function renderAll(){
+  document.getElementById('bizNameDisplay').textContent = data.settings.businessName;
+  document.getElementById('bizHandleDisplay').textContent = data.settings.handle;
+  // Fix 16: sync topbar title from active nav
+  const activeNav = document.querySelector('.sidebar-nav-item.active');
+  const pageTitleEl = document.getElementById('pageTitle');
+  if(activeNav && pageTitleEl) pageTitleEl.textContent = PAGE_TITLES[activeNav.getAttribute('data-page')] || '';
+  renderStats();
+  renderIgStats();
+  renderGrowthTracker();
+  renderChart();
+  renderReelTable();
+  renderCompetitors();
+  renderAgentList();
+  renderSidebarFooter();
+}
+
+renderAll();
+renderThemeToggleIcon();
+checkBackendHealth();
+checkInstagramHealth();
+bootstrapFromServer();
+</script>
+</body>
+</html>

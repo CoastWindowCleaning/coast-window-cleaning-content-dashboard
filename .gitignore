@@ -1,0 +1,14 @@
+node_modules/
+.env
+.env.local
+server/.env
+server/data-store.json
+.DS_Store
+.vercel
+
+# Separate side project (its own git repo, ~900MB of rendered video assets) --
+# not part of the dashboard app that deploys to Vercel.
+remotion/
+
+# Personal/local Claude Code permission overrides, not meant to be shared.
+.claude/settings.local.json

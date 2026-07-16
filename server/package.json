@@ -1,0 +1,16 @@
+{
+  "name": "cwc-dashboard-server",
+  "version": "1.0.0",
+  "description": "Local backend that runs the Content Dashboard's AI agents against the Claude API.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.71.0",
+    "@supabase/supabase-js": "^2.110.6",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.0",
+    "node-cron": "^4.6.0"
+  }
+}
