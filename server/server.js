@@ -178,6 +178,34 @@ app.post('/api/run-agent', async (req, res) => {
   }
 });
 
+// Tool use: lets the Ideas Agent turn a pasted batch of ideas into separate
+// backlog entries instead of the user copying each one out by hand. The
+// ideas backlog is a field inside the single dashboard_state JSONB blob
+// (see server/dataStore.js), not its own Supabase table with row-level
+// inserts -- so there's nothing to execute server-side here. Same as every
+// other client-side mutation in this app (e.g. addIdeaFromPanel in
+// index.html), the tool call's input is handed back to the browser, which
+// applies it to its own data.ideasBacklog and lets the existing
+// saveData()/queueServerSync() debounce push the updated blob to Supabase.
+const ADD_BACKLOG_IDEAS_TOOL = {
+  name: 'add_backlog_ideas',
+  description: 'Add one or more distinct Instagram Reel ideas to the ideas backlog pipeline, each as its own tracked entry. Call this when the user pastes multiple reel ideas at once (one per line, numbered, or bulleted) so they get split into separate backlog items instead of staying lumped together.',
+  input_schema: {
+    type: 'object',
+    properties: {
+      ideas: {
+        type: 'array',
+        items: { type: 'string' },
+        description: 'Array of distinct reel idea strings, one per idea. Do not merge multiple ideas into a single array entry.'
+      }
+    },
+    required: ['ideas']
+  }
+};
+const AGENT_TOOLS = {
+  ideas: [ADD_BACKLOG_IDEAS_TOOL]
+};
+
 app.post('/api/chat', async (req, res) => {
   const { agentKey, systemPrompt, messages } = req.body || {};
 
@@ -205,17 +233,33 @@ app.post('/api/chat', async (req, res) => {
       messages: messages.map((m) => ({ role: m.role, content: m.content }))
     };
     if (systemPrompt) createParams.system = systemPrompt;
+    if (AGENT_TOOLS[agentKey]) createParams.tools = AGENT_TOOLS[agentKey];
 
     const message = await client.messages.create(createParams);
 
-    const text = message.content
+    let text = message.content
       .filter((block) => block.type === 'text')
       .map((block) => block.text)
       .join('\n');
 
+    const toolActions = message.content
+      .filter((block) => block.type === 'tool_use' && block.name === 'add_backlog_ideas')
+      .map((block) => ({
+        type: 'add_backlog_ideas',
+        ideas: Array.isArray(block.input && block.input.ideas) ? block.input.ideas : []
+      }));
+
+    // The model can return a tool_use block with no accompanying text (e.g.
+    // if it treats the tool call as the whole response) -- give the chat
+    // bubble something to show rather than leaving it blank.
+    if (!text.trim() && toolActions.length) {
+      const totalIdeas = toolActions.reduce((sum, a) => sum + a.ideas.length, 0);
+      text = 'Added ' + totalIdeas + ' idea' + (totalIdeas === 1 ? '' : 's') + ' to your backlog.';
+    }
+
     const costUsd = aiClient.costFor(model, message.usage);
 
-    res.json({ text, model, inputTokens: message.usage.input_tokens, outputTokens: message.usage.output_tokens, costUsd });
+    res.json({ text, model, inputTokens: message.usage.input_tokens, outputTokens: message.usage.output_tokens, costUsd, toolActions });
   } catch (err) {
     const detail = (err && err.message) || 'Unknown error calling the Claude API.';
     console.error('Anthropic API error:', detail);

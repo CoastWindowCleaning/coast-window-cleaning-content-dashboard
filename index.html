@@ -1202,7 +1202,8 @@ function buildIdeasPrompt(s){
 '- At least 3 ideas should require zero extra effort beyond filming a job that\'s already happening.\n'+
 '- Vary energy: some calm/ASMR, some high-energy/funny, at least one hard-sell pricing/CTA piece.\n'+
 '- Do not repeat the same hook style twice in a row.\n'+
-'- End with a ranked "if you only film ONE this week" recommendation and say why.';
+'- End with a ranked "if you only film ONE this week" recommendation and say why.\n\n'+
+'BACKLOG TOOL: When the user pastes multiple reel ideas at once (one per line, numbered, or bulleted), call add_backlog_ideas with each distinct idea as a separate array entry — split them out, don\'t merge them into one string. Briefly confirm in your reply what you added. Do not call this tool for a normal conversational message that isn\'t actually a batch of ideas to log.';
 }
 
 function buildHookPrompt(s){
@@ -1565,6 +1566,7 @@ async function sendChatMessage(){
 
     agentData.messages.push({role:'assistant', content:json.text, ts:Date.now(), costUsd:json.costUsd||0});
     recordUsage(json);
+    applyToolActions(json.toolActions);
     saveData();
   }catch(e){
     agentData.messages.push({role:'assistant', content:'Error: '+e.message, ts:Date.now()});
@@ -1575,6 +1577,29 @@ async function sendChatMessage(){
     if(sendBtn) sendBtn.disabled = false;
     renderChatMessages();
     renderAgentList();
+  }
+}
+
+// Applies tool_use actions an agent returned (see server/server.js
+// AGENT_TOOLS) directly to the client-side data model -- the ideas backlog
+// is a field inside the single synced JSONB blob, not its own Supabase
+// table, so this mirrors the existing addIdeaFromPanel() mutation path
+// rather than a server-side insert.
+function applyToolActions(toolActions){
+  if(!Array.isArray(toolActions) || !toolActions.length) return;
+  let addedCount = 0;
+  toolActions.forEach(function(action){
+    if(action.type !== 'add_backlog_ideas' || !Array.isArray(action.ideas)) return;
+    action.ideas.forEach(function(ideaText){
+      const trimmed = (ideaText||'').trim();
+      if(!trimmed) return;
+      data.ideasBacklog.push({id:data.nextBacklogId++, text:trimmed, stage:'idea'});
+      addedCount++;
+    });
+  });
+  if(addedCount){
+    renderIdeasPanel();
+    showToast('Added '+addedCount+' idea'+(addedCount===1?'':'s')+' to backlog.');
   }
 }
 
