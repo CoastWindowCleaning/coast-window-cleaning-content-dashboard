@@ -295,6 +295,10 @@ th.num{text-align:right;}
 
 .ideas-panel{background:var(--bg-elev);border:1px solid var(--border);border-radius:var(--radius);padding:14px;max-height:clamp(280px, calc(100vh - 200px), 900px);overflow-y:auto;}
 .ideas-panel h3{font-size:12px;text-transform:uppercase;letter-spacing:0.04em;color:var(--text-dim);margin:0 0 10px;}
+.funnel-group{margin-bottom:16px;}
+.funnel-group-head{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:650;text-transform:uppercase;letter-spacing:0.04em;color:var(--text-dim);margin-bottom:8px;}
+.funnel-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.funnel-count{color:var(--text-faint);font-weight:500;text-transform:none;letter-spacing:0;}
 .idea-chip{
   background:var(--bg-elev-2);border-radius:8px;padding:8px 10px;margin-bottom:6px;font-size:12px;
   transition:background .15s;
@@ -668,6 +672,19 @@ const PIPELINE_STAGES = ['idea','stage1','stage2','stage3','launched','scrapped'
 const PIPELINE_STAGE_LABELS = { idea:'Idea', stage1:'Stage 1', stage2:'Stage 2', stage3:'Stage 3', launched:'Launched', scrapped:'Scrapped' };
 function stageLabel(stage){ return PIPELINE_STAGE_LABELS[stage] || PIPELINE_STAGE_LABELS.idea; }
 
+const FUNNEL_STAGES = ['TOFU','MOFU','BOFU'];
+const FUNNEL_STAGE_LABELS = { TOFU:'TOFU — Awareness', MOFU:'MOFU — Consideration', BOFU:'BOFU — Conversion' };
+function funnelStageLabel(stage){ return FUNNEL_STAGE_LABELS[stage] || 'Unclassified'; }
+function funnelStageColor(stage){
+  if(stage==='TOFU') return 'var(--accent)';
+  if(stage==='MOFU') return 'var(--text-dim)';
+  if(stage==='BOFU') return 'var(--green)';
+  return 'var(--text-faint)';
+}
+function defaultProduction(){
+  return { hooks:[], script:[], outro:'', caption:'', hashtags:'', editingNotes:'' };
+}
+
 function sampleReels(){
   return [
     {id:1,date:'2026-06-19',caption:"Client said \"I didn't know windows could look like this\"",views:15800,likes:990,comments:58,url:'https://www.instagram.com/reel/sample_cwc_01/',
@@ -706,9 +723,9 @@ function defaultData(){
       ideas:{messages:[]}, hook:{messages:[]}, planner:{messages:[]}, analyst:{messages:[]}, dm:{messages:[]}
     },
     ideasBacklog:[
-      {id:1, text:'Satisfying before/after: grimy storm windows transformation', stage:'idea'},
-      {id:2, text:'Squeegee ASMR close-up on a large storefront window', stage:'stage1'},
-      {id:3, text:'Client reaction video after first-time cleaning reveal', stage:'launched'}
+      {id:1, text:'Satisfying before/after: grimy storm windows transformation', stage:'idea', funnelStage:'TOFU', production:defaultProduction()},
+      {id:2, text:'Squeegee ASMR close-up on a large storefront window', stage:'stage1', funnelStage:'TOFU', production:defaultProduction()},
+      {id:3, text:'Client reaction video after first-time cleaning reveal', stage:'launched', funnelStage:'BOFU', production:defaultProduction()}
     ],
     nextBacklogId:4,
     competitors:[
@@ -741,10 +758,11 @@ function mergeWithDefaults(parsed){
     mergedAgents[k] = Object.assign({messages:[]}, defaultAgents[k], savedAgents[k]||{});
   });
   const mergedBacklog = (Array.isArray(parsed.ideasBacklog) ? parsed.ideasBacklog : d.ideasBacklog).map(function(item){
-    if(item.stage && PIPELINE_STAGES.indexOf(item.stage) > -1) return item;
     // migrate old used:boolean model to the stage pipeline
-    const stage = item.used ? 'launched' : 'idea';
-    return Object.assign({}, item, {stage:stage});
+    const stage = (item.stage && PIPELINE_STAGES.indexOf(item.stage) > -1) ? item.stage : (item.used ? 'launched' : 'idea');
+    const funnelStage = FUNNEL_STAGES.indexOf(item.funnelStage) > -1 ? item.funnelStage : null;
+    const production = Object.assign(defaultProduction(), item.production||{});
+    return Object.assign({}, item, {stage:stage, funnelStage:funnelStage, production:production});
   });
   const mergedCompetitors = (Array.isArray(parsed.competitors) ? parsed.competitors : d.competitors).map(function(c){
     return Object.assign({posts:[], followerHistory:[]}, c);
@@ -1212,7 +1230,11 @@ function buildIdeasPrompt(s){
 '- Vary energy: some calm/ASMR, some high-energy/funny, at least one hard-sell pricing/CTA piece.\n'+
 '- Do not repeat the same hook style twice in a row.\n'+
 '- End with a ranked "if you only film ONE this week" recommendation and say why.\n\n'+
-'BACKLOG TOOL: When the user pastes multiple reel ideas at once (one per line, numbered, or bulleted), call add_backlog_ideas with each distinct idea as a separate array entry — split them out, don\'t merge them into one string. Briefly confirm in your reply what you added. Do not call this tool for a normal conversational message that isn\'t actually a batch of ideas to log.';
+'FUNNEL STAGES: Every reel idea sits at one stage of the marketing funnel:\n'+
+'- TOFU (Top of Funnel): broad-reach awareness content for people who don\'t know this business yet — satisfying/entertaining hooks, general education, relatability. Optimizes for reach and follows, not an immediate sale.\n'+
+'- MOFU (Middle of Funnel): consideration and trust-building content for people who already know the business exists — process/behind-the-scenes, credibility, testimonials, expertise, addressing objections.\n'+
+'- BOFU (Bottom of Funnel): conversion-focused content for someone ready to book — pricing transparency, direct offers, strong CTAs, urgency, "DM to book."\n\n'+
+'BACKLOG TOOL: When the user pastes multiple reel ideas at once (one per line, numbered, or bulleted), call add_backlog_ideas. Classify EACH idea into exactly one funnel stage (TOFU/MOFU/BOFU) above and pass each idea as a separate {text, funnelStage} object in the ideas array — split them out, don\'t merge them into one string. Briefly confirm in your reply what you added and its funnel-stage mix (e.g. "Added 6 ideas: 3 TOFU, 2 MOFU, 1 BOFU"). Do not call this tool for a normal conversational message that isn\'t actually a batch of ideas to log.';
 }
 
 function buildHookPrompt(s){
@@ -1248,7 +1270,7 @@ function buildPlannerPrompt(s){
 'BUSINESS: '+s.businessName+'\n'+
 'INSTAGRAM: '+s.handle+'\n'+
 'POSTING GOAL: '+s.postingGoal+'\n\n'+
-'I will paste my current ideas backlog below. Each idea shows its pipeline stage in brackets (Idea = just captured, Stage 1-3 = in development/further along, Launched = already posted, Scrapped = abandoned). Build a 7-day content calendar, preferring ideas that are further along in the pipeline (Stage 2/3) since they are closer to camera-ready, and never scheduling a Launched or Scrapped idea.\n\n'+
+'I will paste my current ideas backlog below. Each idea shows its pipeline stage in brackets (Idea = just captured, Stage 1-3 = in development/further along, Launched = already posted, Scrapped = abandoned) and, in a second bracket, its funnel stage (TOFU = broad-reach awareness, MOFU = consideration/trust-building, BOFU = conversion-focused; Unclassified = not yet tagged). A FUNNEL BALANCE line up top gives the current TOFU/MOFU/BOFU counts. Build a 7-day content calendar, preferring ideas that are further along in the pipeline (Stage 2/3) since they are closer to camera-ready, and never scheduling a Launched or Scrapped idea.\n\n'+
 'IDEAS BACKLOG:\n[paste backlog here]\n\n'+
 'For each of the 7 days, return:\n'+
 '- Day + suggested posting time (pick times based on when a LOCAL SERVICE audience — homeowners, property managers, small business owners — is actually scrolling: early morning before work, lunch break, evening 7-9pm; weekends skew later morning)\n'+
@@ -1258,6 +1280,7 @@ function buildPlannerPrompt(s){
 'Rules:\n'+
 '- No format repeats two days in a row.\n'+
 '- Include at least one pricing-transparency post and one client-reaction post across the week.\n'+
+'- Balance funnel stages across the week using the FUNNEL BALANCE counts and each idea\'s bracketed funnel tag — a healthy week has a mix of TOFU (reach), MOFU (trust), and BOFU (conversion), not all one stage. Flag it explicitly if the current backlog is too skewed to build a balanced week.\n'+
 '- Flag if the backlog doesn\'t have enough variety and suggest what new idea type to add.\n'+
 '- End with a short note on which day is the "hero post" most likely to perform best, and why.';
 }
@@ -1284,7 +1307,7 @@ function buildAnalystPrompt(s){
 '## LONG-TERM PATTERN (from the full historical archive, not just last 12)\n'+
 'Using the HISTORICAL ARCHIVE data below, name the content type/hook/format/tone combination with the best all-time avg engagement rate across 2+ reels, and the one with the worst. If the archive is too small to say anything beyond the last-12 window, say so plainly instead of forcing a pattern.\n\n'+
 '## CONTENT GAP ASSESSMENT\n'+
-'Based on the content types, hooks, and formats actually logged, what hasn\'t been covered in a while? Note any of the brand\'s core content pillars (transformation/before-after, team-in-action, customer testimonial, educational tips, behind-the-scenes/commercial scale) that are underrepresented in this data.\n\n'+
+'Based on the content types, hooks, and formats actually logged, what hasn\'t been covered in a while? Note any of the brand\'s core content pillars (transformation/before-after, team-in-action, customer testimonial, educational tips, behind-the-scenes/commercial scale) that are underrepresented in this data. Also assess funnel-stage balance (TOFU/MOFU/BOFU) using the FUNNEL BALANCE counts and per-idea tags in the CONTENT PIPELINE section below — flag if the backlog is skewed too heavily toward one stage (e.g. all awareness content with nothing built to convert, or all pricing/CTA content with nothing building trust first).\n\n'+
 '## NOVELTY CHECK\n'+
 'Flag any idea you\'re about to recommend below that repeats the same content type + hook combination already used in the last 60 days of data provided. Suggest a variation instead of an exact repeat.\n\n'+
 '## COMPETITOR-INFORMED IDEAS\n'+
@@ -1396,6 +1419,11 @@ function stageSelectOptions(current){
     return '<option value="'+s+'"'+(s===current?' selected':'')+'>'+stageLabel(s)+'</option>';
   }).join('');
 }
+function funnelSelectOptions(current){
+  return '<option value=""'+(!current?' selected':'')+'>Unclassified</option>' + FUNNEL_STAGES.map(function(s){
+    return '<option value="'+s+'"'+(s===current?' selected':'')+'>'+s+'</option>';
+  }).join('');
+}
 function renderIdeasPanel(){
   const container = document.getElementById('ideasPanelList');
   if(!container) return;
@@ -1404,16 +1432,269 @@ function renderIdeasPanel(){
     container.innerHTML = '<div style="color:var(--text-faint);font-size:12px;padding:4px 0;">No ideas yet — ask the Ideas Agent!</div>';
     return;
   }
-  container.innerHTML = items.map(function(i){
-    return '<div class="idea-chip stage-'+i.stage+'">'+
-      '<div class="idea-chip-text" onclick="pasteIdeaToChat(\''+escapeHtml(i.text).replace(/'/g,"&#039;")+'\')">'+escapeHtml(i.text)+'</div>'+
-      '<div class="idea-chip-row">'+
-        '<span class="stage-dot" style="background:'+stageColor(i.stage)+';"></span>'+
-        '<select onchange="setIdeaStage('+i.id+',this.value)">'+stageSelectOptions(i.stage)+'</select>'+
-        '<button class="idea-chip-del" onclick="deleteBacklogItem('+i.id+')" title="Delete">'+icon('x',12)+'</button>'+
-      '</div>'+
+  const groups = { TOFU:[], MOFU:[], BOFU:[], Unclassified:[] };
+  items.forEach(function(i){
+    const key = FUNNEL_STAGES.indexOf(i.funnelStage) > -1 ? i.funnelStage : 'Unclassified';
+    groups[key].push(i);
+  });
+  container.innerHTML = ['TOFU','MOFU','BOFU','Unclassified'].map(function(key){
+    if(!groups[key].length) return '';
+    return '<div class="funnel-group">'+
+      '<div class="funnel-group-head"><span class="funnel-dot" style="background:'+funnelStageColor(key==='Unclassified'?null:key)+';"></span>'+
+        (key==='Unclassified'?'Unclassified':funnelStageLabel(key))+' <span class="funnel-count">('+groups[key].length+')</span></div>'+
+      groups[key].map(renderIdeaChip).join('')+
     '</div>';
   }).join('');
+}
+function renderIdeaChip(i){
+  return '<div class="idea-chip stage-'+i.stage+'">'+
+    '<div class="idea-chip-text" onclick="openIdeaProductionModal('+i.id+')">'+escapeHtml(i.text)+'</div>'+
+    '<div class="idea-chip-row">'+
+      '<span class="stage-dot" style="background:'+stageColor(i.stage)+';"></span>'+
+      '<select onchange="setIdeaStage('+i.id+',this.value)" title="Pipeline stage">'+stageSelectOptions(i.stage)+'</select>'+
+      '<select onchange="setIdeaFunnelStage('+i.id+',this.value)" title="Funnel stage (manual override)">'+funnelSelectOptions(i.funnelStage)+'</select>'+
+      '<button class="idea-chip-del" onclick="pasteIdeaToChat(\''+escapeHtml(i.text).replace(/'/g,"&#039;")+'\')" title="Paste to chat">'+icon('send',12)+'</button>'+
+      '<button class="idea-chip-del" onclick="deleteBacklogItem('+i.id+')" title="Delete">'+icon('x',12)+'</button>'+
+    '</div>'+
+  '</div>';
+}
+function setIdeaFunnelStage(id, stage){
+  const item = data.ideasBacklog.find(i=>i.id===id);
+  if(!item) return;
+  item.funnelStage = FUNNEL_STAGES.indexOf(stage) > -1 ? stage : null;
+  saveData();
+  renderIdeasPanel();
+}
+
+/* ============================= IDEA PRODUCTION MODAL ============================= */
+function openIdeaProductionModal(id){
+  const item = data.ideasBacklog.find(i=>i.id===id);
+  if(!item) return;
+  if(!item.production) item.production = defaultProduction();
+  renderProductionModal(item);
+}
+
+function renderProductionModal(item){
+  const p = item.production;
+  const shortText = item.text.length > 70 ? item.text.slice(0,70)+'…' : item.text;
+  const funnelBadge = item.funnelStage
+    ? '<span style="display:inline-block;margin-left:8px;font-size:11px;font-weight:650;color:'+funnelStageColor(item.funnelStage)+';">'+item.funnelStage+'</span>'
+    : '';
+
+  const hooksHtml = [0,1,2].map(function(idx){
+    const h = p.hooks[idx] || {line:'', onScreenText:'', why:''};
+    return '<div style="border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:10px;">'+
+      '<div class="label" style="margin-bottom:8px;">Hook '+(idx+1)+'</div>'+
+      '<div class="field" style="margin-bottom:8px;"><label>Spoken line</label><input type="text" value="'+escapeHtml(h.line)+'" onchange="updateProductionHookField('+item.id+','+idx+',\'line\',this.value)"/></div>'+
+      '<div class="field" style="margin-bottom:8px;"><label>On-screen text</label><input type="text" value="'+escapeHtml(h.onScreenText)+'" onchange="updateProductionHookField('+item.id+','+idx+',\'onScreenText\',this.value)"/></div>'+
+      '<div class="field"><label>Why it works</label><textarea rows="2" onchange="updateProductionHookField('+item.id+','+idx+',\'why\',this.value)">'+escapeHtml(h.why)+'</textarea></div>'+
+    '</div>';
+  }).join('');
+
+  const scriptHtml = p.script.length ? p.script.map(function(row, idx){
+    return '<div style="border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:8px;">'+
+      '<div class="form-grid">'+
+        '<div class="field"><label>Timestamp</label><input type="text" value="'+escapeHtml(row.timestamp)+'" onchange="updateProductionScriptField('+item.id+','+idx+',\'timestamp\',this.value)"/></div>'+
+        '<div class="field"><label>Shot</label><input type="text" value="'+escapeHtml(row.shot)+'" onchange="updateProductionScriptField('+item.id+','+idx+',\'shot\',this.value)"/></div>'+
+        '<div class="field full"><label>Dialogue</label><input type="text" value="'+escapeHtml(row.dialogue)+'" onchange="updateProductionScriptField('+item.id+','+idx+',\'dialogue\',this.value)"/></div>'+
+        '<div class="field full"><label>On-screen text</label><input type="text" value="'+escapeHtml(row.onScreenText)+'" onchange="updateProductionScriptField('+item.id+','+idx+',\'onScreenText\',this.value)"/></div>'+
+      '</div>'+
+      '<div style="text-align:right;margin-top:6px;"><button class="idea-chip-del" onclick="removeProductionScriptRow('+item.id+','+idx+')" title="Remove shot">'+icon('x',12)+' Remove shot</button></div>'+
+    '</div>';
+  }).join('') : '<div class="empty-note" style="margin-bottom:8px;">No shots yet — generate a script or add one manually.</div>';
+
+  openModal(
+    '<div class="modal-header"><div class="modal-title">'+icon('film',16)+' Production'+funnelBadge+'</div><button class="modal-close" onclick="closeModal()">'+icon('x',16)+'</button></div>'+
+    '<div class="modal-body">'+
+      '<div class="prompt-box" style="margin-bottom:16px;" title="'+escapeHtml(item.text)+'">'+escapeHtml(item.text)+'</div>'+
+      '<div class="form-actions" style="justify-content:flex-start;margin:0 0 18px;">'+
+        '<button class="btn btn-primary btn-sm" id="genScriptBtn" onclick="generateScriptForIdea('+item.id+')">'+icon('sparkle',14)+' Generate Script with AI</button>'+
+      '</div>'+
+      '<div class="label" style="margin-bottom:10px;">Hooks</div>'+
+      hooksHtml+
+      '<hr style="border-color:var(--border);margin:18px 0;"/>'+
+      '<div class="label" style="margin-bottom:10px;">Script</div>'+
+      '<div id="productionScriptRows">'+scriptHtml+'</div>'+
+      '<button class="btn btn-sm" style="margin-bottom:16px;" onclick="addProductionScriptRow('+item.id+')">+ Add shot</button>'+
+      '<div class="field full" style="margin-bottom:14px;"><label>Outro</label><textarea rows="2" onchange="updateProductionField('+item.id+',\'outro\',this.value)">'+escapeHtml(p.outro)+'</textarea></div>'+
+      '<div class="field full" style="margin-bottom:14px;"><label>Caption</label><textarea rows="3" onchange="updateProductionField('+item.id+',\'caption\',this.value)">'+escapeHtml(p.caption)+'</textarea></div>'+
+      '<div class="field full" style="margin-bottom:18px;"><label>Hashtags</label><input type="text" onchange="updateProductionField('+item.id+',\'hashtags\',this.value)" value="'+escapeHtml(p.hashtags)+'"/></div>'+
+      '<hr style="border-color:var(--border);margin:18px 0;"/>'+
+      '<div class="label" style="margin-bottom:10px;">Editing Notes</div>'+
+      '<div class="field full" style="margin-bottom:10px;"><textarea rows="6" onchange="updateProductionField('+item.id+',\'editingNotes\',this.value)">'+escapeHtml(p.editingNotes)+'</textarea></div>'+
+      '<div class="form-actions" style="justify-content:flex-start;margin:0;">'+
+        '<button class="btn btn-sm" id="editSuggestBtn" onclick="askEditingSuggestions('+item.id+')">'+icon('sparkle',14)+' Ask AI for editing suggestions</button>'+
+      '</div>'+
+      '<div class="form-actions"><button class="btn btn-primary" onclick="closeModal()">Done</button></div>'+
+    '</div>',
+    {wide:true}
+  );
+}
+
+function updateProductionField(id, field, value){
+  const item = data.ideasBacklog.find(i=>i.id===id);
+  if(!item) return;
+  if(!item.production) item.production = defaultProduction();
+  item.production[field] = value;
+  saveData();
+}
+function updateProductionHookField(id, idx, field, value){
+  const item = data.ideasBacklog.find(i=>i.id===id);
+  if(!item) return;
+  if(!item.production) item.production = defaultProduction();
+  if(!item.production.hooks[idx]) item.production.hooks[idx] = {line:'', onScreenText:'', why:''};
+  item.production.hooks[idx][field] = value;
+  saveData();
+}
+function updateProductionScriptField(id, idx, field, value){
+  const item = data.ideasBacklog.find(i=>i.id===id);
+  if(!item || !item.production.script[idx]) return;
+  item.production.script[idx][field] = value;
+  saveData();
+}
+function addProductionScriptRow(id){
+  const item = data.ideasBacklog.find(i=>i.id===id);
+  if(!item) return;
+  item.production.script.push({timestamp:'', shot:'', dialogue:'', onScreenText:''});
+  saveData();
+  renderProductionModal(item);
+}
+function removeProductionScriptRow(id, idx){
+  const item = data.ideasBacklog.find(i=>i.id===id);
+  if(!item) return;
+  item.production.script.splice(idx,1);
+  saveData();
+  renderProductionModal(item);
+}
+
+// Reuses buildHookPrompt()'s business-context/task-framing preamble for this
+// one specific idea, but swaps its markdown "Return exactly this structure"
+// section for a machine-parseable one -- the chat version is meant to be read
+// by a person, this one needs to populate discrete editable fields.
+function buildScriptGenPrompt(ideaText){
+  const full = buildHookPrompt(data.settings);
+  const preamble = full.split('Return exactly this structure:')[0];
+  return preamble.replace('[paste idea here]', ideaText) +
+    'Return your answer using EXACTLY this machine-parseable structure and nothing else — no markdown headers, no extra commentary:\n\n'+
+    'HOOK1_LINE: <spoken line>\n'+
+    'HOOK1_TEXT: <on-screen text — should not just repeat the spoken line word-for-word>\n'+
+    'HOOK1_WHY: <why this hook stops the scroll>\n'+
+    'HOOK2_LINE: <spoken line>\n'+
+    'HOOK2_TEXT: <on-screen text>\n'+
+    'HOOK2_WHY: <why this hook stops the scroll>\n'+
+    'HOOK3_LINE: <spoken line>\n'+
+    'HOOK3_TEXT: <on-screen text>\n'+
+    'HOOK3_WHY: <why this hook stops the scroll>\n'+
+    'SCRIPT:\n'+
+    '<one line per shot, exactly in this pipe-separated format: timestamp range | shot description/camera angle | what is said (or blank) | on-screen text (or blank) -- build to a clear payoff moment around the 60-75% mark>\n'+
+    'OUTRO: <the CTA line spoken/shown in the final 2-3 seconds>\n'+
+    'CAPTION: <one caption, 2-4 sentences, reinforces the hook, ends with a clear low-friction local call-to-action, sounds like a real tradesperson not a marketing agency>\n'+
+    'HASHTAGS: <exactly 5 hashtags space-separated, mix niche window-cleaning/home-service tags with local relevance>'+
+    NO_EMOJI_CONSTRAINT;
+}
+
+function parseScriptGenResponse(text){
+  const result = { hooks:[{line:'',onScreenText:'',why:''},{line:'',onScreenText:'',why:''},{line:'',onScreenText:'',why:''}], script:[], outro:'', caption:'', hashtags:'' };
+  let inScript = false;
+  (text||'').split('\n').forEach(function(raw){
+    const line = raw.trim();
+    if(!line) return;
+    let m;
+    if((m = line.match(/^HOOK([123])_LINE:\s*(.*)$/i))){ result.hooks[Number(m[1])-1].line = m[2].trim(); inScript=false; return; }
+    if((m = line.match(/^HOOK([123])_TEXT:\s*(.*)$/i))){ result.hooks[Number(m[1])-1].onScreenText = m[2].trim(); inScript=false; return; }
+    if((m = line.match(/^HOOK([123])_WHY:\s*(.*)$/i))){ result.hooks[Number(m[1])-1].why = m[2].trim(); inScript=false; return; }
+    if(/^SCRIPT:?$/i.test(line)){ inScript = true; return; }
+    if((m = line.match(/^OUTRO:\s*(.*)$/i))){ result.outro = m[1].trim(); inScript=false; return; }
+    if((m = line.match(/^CAPTION:\s*(.*)$/i))){ result.caption = m[1].trim(); inScript=false; return; }
+    if((m = line.match(/^HASHTAGS:\s*(.*)$/i))){ result.hashtags = m[1].trim(); inScript=false; return; }
+    if(inScript && line.indexOf('|') > -1){
+      const parts = line.split('|').map(function(s){ return s.trim(); });
+      result.script.push({ timestamp: parts[0]||'', shot: parts[1]||'', dialogue: parts[2]||'', onScreenText: parts[3]||'' });
+    }
+  });
+  return result;
+}
+
+async function generateScriptForIdea(id){
+  const item = data.ideasBacklog.find(i=>i.id===id);
+  if(!item) return;
+  if(!backendStatus) await checkBackendHealth();
+  if(!backendStatus || !backendStatus.ok || !backendStatus.hasKey){
+    showToast('AI backend not connected — see AI-AGENT-SETUP.md');
+    return;
+  }
+  const btn = document.getElementById('genScriptBtn');
+  if(btn){ btn.disabled = true; btn.innerHTML = icon('sparkle',14)+' Generating…'; }
+  try{
+    const prompt = buildScriptGenPrompt(item.text);
+    const resp = await fetch('/api/run-agent', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({agentKey:'hook', prompt})
+    });
+    const json = await resp.json();
+    if(!resp.ok) throw new Error(json.error || 'Request failed');
+    const parsed = parseScriptGenResponse(json.text);
+    item.production = Object.assign(defaultProduction(), item.production, {
+      hooks: parsed.hooks,
+      script: parsed.script,
+      outro: parsed.outro,
+      caption: parsed.caption,
+      hashtags: parsed.hashtags
+    });
+    if(json.costUsd) recordUsage(json); else saveData();
+    renderProductionModal(item);
+    showToast('Script generated');
+  }catch(e){
+    showToast('AI error: '+e.message);
+    if(btn){ btn.disabled = false; btn.innerHTML = icon('sparkle',14)+' Generate Script with AI'; }
+  }
+}
+
+function buildEditingSuggestionsPrompt(item){
+  const p = item.production;
+  const hooksText = p.hooks.filter(function(h){ return h.line||h.onScreenText; }).map(function(h,idx){
+    return (idx+1)+'. "'+h.line+'" (on-screen: "'+h.onScreenText+'")';
+  }).join('\n') || '(no hooks written yet)';
+  const scriptText = p.script.length ? p.script.map(function(r){ return r.timestamp+' | '+r.shot+' | '+r.dialogue+' | '+r.onScreenText; }).join('\n') : '(no shot list yet)';
+  return 'You are a short-form video editor for a local window cleaning business\'s Instagram Reels.\n\n'+
+    'IDEA: '+item.text+'\n\n'+
+    'HOOKS DRAFTED:\n'+hooksText+'\n\n'+
+    'SHOT LIST:\n'+scriptText+'\n\n'+
+    'OUTRO: '+(p.outro||'(none yet)')+'\n\n'+
+    (p.editingNotes ? 'EXISTING EDITING NOTES (do not repeat these -- add NEW suggestions only):\n'+p.editingNotes+'\n\n' : '')+
+    'Give 3-5 concrete, specific post-production/editing suggestions for this reel -- pacing, cuts, music/sound cues, on-screen text timing, b-roll to grab while filming, transitions at the payoff moment. Be specific to THIS idea/script, not generic advice. Return as a plain bullet list, nothing else.'+
+    NO_EMOJI_CONSTRAINT;
+}
+
+async function askEditingSuggestions(id){
+  const item = data.ideasBacklog.find(i=>i.id===id);
+  if(!item) return;
+  if(!backendStatus) await checkBackendHealth();
+  if(!backendStatus || !backendStatus.ok || !backendStatus.hasKey){
+    showToast('AI backend not connected — see AI-AGENT-SETUP.md');
+    return;
+  }
+  const btn = document.getElementById('editSuggestBtn');
+  if(btn){ btn.disabled = true; btn.innerHTML = icon('sparkle',14)+' Thinking…'; }
+  try{
+    const prompt = buildEditingSuggestionsPrompt(item);
+    const resp = await fetch('/api/run-agent', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({agentKey:'hook', prompt})
+    });
+    const json = await resp.json();
+    if(!resp.ok) throw new Error(json.error || 'Request failed');
+    const stamp = new Date().toLocaleString([], {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'});
+    const addition = '--- AI suggestions ('+stamp+') ---\n'+json.text.trim();
+    item.production.editingNotes = (item.production.editingNotes ? item.production.editingNotes+'\n\n' : '') + addition;
+    if(json.costUsd) recordUsage(json); else saveData();
+    renderProductionModal(item);
+    showToast('Editing suggestions added');
+  }catch(e){
+    showToast('AI error: '+e.message);
+  }finally{
+    if(btn){ btn.disabled = false; btn.innerHTML = icon('sparkle',14)+' Ask AI for editing suggestions'; }
+  }
 }
 
 function pasteIdeaToChat(text){
@@ -1425,14 +1706,34 @@ function pasteIdeaToChat(text){
   input.style.height = Math.min(input.scrollHeight, 120)+'px';
 }
 
-function addIdeaFromPanel(){
+async function addIdeaFromPanel(){
   const input = document.getElementById('newIdeaInput');
   const val = input ? input.value.trim() : '';
   if(!val) return;
-  data.ideasBacklog.push({id:data.nextBacklogId++, text:val, stage:'idea'});
+  const item = {id:data.nextBacklogId++, text:val, stage:'idea', funnelStage:null, production:defaultProduction()};
+  data.ideasBacklog.push(item);
   saveData();
   if(input) input.value = '';
   renderIdeasPanel();
+
+  // Cheap one-shot Haiku classification -- best-effort, never blocks adding
+  // the idea itself (see /api/ideas/classify-funnel-stage in server.js).
+  try{
+    if(!backendStatus) await checkBackendHealth();
+    if(backendStatus && backendStatus.ok && backendStatus.hasKey){
+      const resp = await fetch('/api/ideas/classify-funnel-stage', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({text: val})
+      });
+      const json = await resp.json();
+      if(resp.ok && FUNNEL_STAGES.indexOf(json.funnelStage) > -1){
+        item.funnelStage = json.funnelStage;
+        saveData();
+        renderIdeasPanel();
+      }
+      if(json.costUsd) recordUsage(json);
+    }
+  }catch(e){ /* classification is best-effort -- leave funnelStage null on failure */ }
 }
 
 function inlineMd(s){
@@ -1496,7 +1797,7 @@ const NO_EMOJI_CONSTRAINT = '\n\nBRAND STYLE RULE: Never use emojis anywhere in 
 function buildSystemPrompt(key){
   let base = AGENT_META[key].promptFn(data.settings);
   if(key === 'planner') base = base.replace('[paste backlog here]', getBacklogText());
-  if(key === 'analyst') base = base.replace('[paste exported reel data here]', getReelDataText()) + '\n\n' + getHistoricalArchiveText() + '\n\n' + getCompetitorIntelText() + '\n\nCONTENT PIPELINE (current ideas backlog, with each idea\'s stage):\n' + getBacklogText();
+  if(key === 'analyst') base = base.replace('[paste exported reel data here]', getReelDataText()) + '\n\n' + getHistoricalArchiveText() + '\n\n' + getCompetitorIntelText() + '\n\nCONTENT PIPELINE (current ideas backlog, with each idea\'s pipeline stage and funnel stage):\n' + getBacklogText();
   if(key === 'hook') base = base.replace('\n\nIDEA: [paste idea here]', '\n\nThe user will provide the idea they want scripted in the chat. Wait for their message.');
   return base + NO_EMOJI_CONSTRAINT;
 }
@@ -1599,10 +1900,12 @@ function applyToolActions(toolActions){
   let addedCount = 0;
   toolActions.forEach(function(action){
     if(action.type !== 'add_backlog_ideas' || !Array.isArray(action.ideas)) return;
-    action.ideas.forEach(function(ideaText){
-      const trimmed = (ideaText||'').trim();
+    action.ideas.forEach(function(idea){
+      const isObj = idea && typeof idea === 'object';
+      const trimmed = ((isObj ? idea.text : idea)||'').trim();
       if(!trimmed) return;
-      data.ideasBacklog.push({id:data.nextBacklogId++, text:trimmed, stage:'idea'});
+      const funnelStage = isObj && FUNNEL_STAGES.indexOf(idea.funnelStage) > -1 ? idea.funnelStage : null;
+      data.ideasBacklog.push({id:data.nextBacklogId++, text:trimmed, stage:'idea', funnelStage:funnelStage, production:defaultProduction()});
       addedCount++;
     });
   });
@@ -1832,7 +2135,13 @@ async function analyzeCommentSummary(reelId, btn){
 
 function getBacklogText(){
   if(!data.ideasBacklog.length) return 'No ideas in the backlog yet — treat this as a blank slate.';
-  return data.ideasBacklog.map(i=>'- ['+stageLabel(i.stage)+'] '+i.text).join('\n');
+  const counts = {TOFU:0, MOFU:0, BOFU:0, Unclassified:0};
+  data.ideasBacklog.forEach(function(i){
+    counts[FUNNEL_STAGES.indexOf(i.funnelStage) > -1 ? i.funnelStage : 'Unclassified']++;
+  });
+  const summary = 'FUNNEL BALANCE: TOFU '+counts.TOFU+' | MOFU '+counts.MOFU+' | BOFU '+counts.BOFU+' | Unclassified '+counts.Unclassified;
+  const lines = data.ideasBacklog.map(i=>'- ['+stageLabel(i.stage)+'] ['+(i.funnelStage||'Unclassified')+'] '+i.text).join('\n');
+  return summary + '\n\n' + lines;
 }
 function getReelDataText(){
   const rows = last12Reels();

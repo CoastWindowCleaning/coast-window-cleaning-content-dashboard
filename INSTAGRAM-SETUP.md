@@ -28,24 +28,38 @@ This takes about 20–30 minutes the first time, mostly clicking through Meta's 
 2. Confirm your own Facebook account is listed as **Admin** (it usually is automatically, since you created the app).
 3. That's it — as the app's admin, you can use any permission on your own linked account without waiting for Meta's review. Review is only required before *other people's* accounts can use your app.
 
-## Step 4 — Generate a long-lived access token
+## Step 4 — Generate a token that doesn't expire (System User)
 
-1. Go to [Graph API Explorer](https://developers.facebook.com/tools/explorer/).
-2. In the top right, select your app from the dropdown.
-3. Click **"Get Token" → "Get User Access Token"**.
-4. In the permissions checklist, select: `instagram_business_basic`, `instagram_business_content_publish`, `instagram_business_manage_insights`, `pages_show_list`, `pages_read_engagement`. Click **Generate Access Token** and approve.
-5. Change the request from `GET /me` to `GET /me/accounts` and click **Submit**. Find your Page in the results and copy its `"access_token"` value and `"id"`.
-6. This Page token from step 5 is what you'll use — page tokens generated this way from a long-lived user token don't expire under normal use. If you ever see authentication errors months from now, come back to this step and generate a fresh one (see "Keeping it working" below).
+The quick "Get User Access Token" button in Graph API Explorer looks convenient, but it hands you a **short-lived token** (hours, not months) unless you separately exchange it for a long-lived one — and even that long-lived version can still die if you ever change your Facebook password. Skip that trap entirely with a **System User** token, which is what Meta actually designed for unattended server integrations like this dashboard: it isn't tied to your personal login at all, and you can set its expiration to **Never**.
 
-## Step 5 — Get your Instagram Business Account ID
+1. Go to [business.facebook.com](https://business.facebook.com/) and open (or create — it's free) a **Business Manager** for your business.
+2. **Business Settings → Users → System Users → Add**.
+3. Name it something recognizable (e.g. "Dashboard Server"), set role to **Admin**, click **Create System User**.
+4. Still on that System User, go to **Assigned Assets → Add Assets**.
+   - Under **Pages**, select the Facebook Page linked to your Instagram account and give it **Full control**.
+   - If your Instagram account also appears as its own asset type, assign it **Full control** too.
+5. Click **Generate New Token** on the System User.
+   - Select the app you created in Step 2.
+   - Check these permissions: `instagram_business_basic`, `instagram_business_content_publish`, `instagram_business_manage_insights`, `pages_show_list`, `pages_read_engagement`.
+   - Set **Token Expiration** to **Never**.
+   - Click **Generate Token**.
+6. **Copy the token immediately and save it somewhere safe** — Meta only shows it once. This is your `INSTAGRAM_ACCESS_TOKEN`.
 
-Still in Graph API Explorer, run:
+## Step 5 — Get your Page ID and Instagram Business Account ID
+
+Go to [Graph API Explorer](https://developers.facebook.com/tools/explorer/), select your app, paste your System User token into the **Access Token** field, then run:
 
 ```
-GET /{page-id}?fields=instagram_business_account&access_token={page-access-token}
+GET /me/accounts
 ```
 
-(Replace `{page-id}` and `{page-access-token}` with the values from Step 4.) The response contains `"instagram_business_account": { "id": "1789..." }` — that numeric id is your `INSTAGRAM_BUSINESS_ID`.
+Find your Page in the results and copy its `"id"` — that's your `{page-id}` below. Then run:
+
+```
+GET /{page-id}?fields=instagram_business_account&access_token={system-user-token}
+```
+
+The response contains `"instagram_business_account": { "id": "1789..." }` — that numeric id is your `INSTAGRAM_BUSINESS_ID`.
 
 ## Step 6 — Set up Cloudinary (free) for video hosting
 
@@ -65,7 +79,7 @@ Instagram's API requires your video to already be sitting at a public web addres
 Open `server/.env` (create it from `server/.env.example` first if you haven't) and fill in:
 
 ```
-INSTAGRAM_ACCESS_TOKEN=the-page-access-token-from-step-4
+INSTAGRAM_ACCESS_TOKEN=the-system-user-token-from-step-4
 INSTAGRAM_BUSINESS_ID=the-numeric-id-from-step-5
 CLOUDINARY_CLOUD_NAME=from-step-6
 CLOUDINARY_UPLOAD_PRESET=from-step-6
@@ -87,4 +101,9 @@ Restart the server (`Ctrl+C` then `npm start` in the `server` folder). Open `htt
 
 ## Keeping it working
 
-Page access tokens obtained this way are long-lived but not eternal — Meta can invalidate them if you change your Facebook password, remove the app's permissions, or after long inactivity. If **● Instagram Connected** turns into **○ Instagram Offline** unexpectedly, just repeat Steps 4–5 to generate a fresh token and update `.env`.
+A System User token with expiration set to **Never** should keep working indefinitely and isn't affected by your personal Facebook password changing. The only things that can still break it:
+- Someone removes the System User's access to the Page/Instagram asset in Business Settings, or deletes the System User itself.
+- The app's permissions get revoked or the app is deleted from the Business Manager.
+- Meta invalidates it for a policy/security reason (rare, and usually comes with an email explaining why).
+
+If **● Instagram Connected** turns into **○ Instagram Offline** unexpectedly, check **Business Settings → Users → System Users** first to confirm the System User and its asset assignment are still intact before regenerating a token via Steps 4–5.

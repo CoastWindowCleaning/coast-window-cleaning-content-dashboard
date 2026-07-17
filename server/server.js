@@ -12,6 +12,7 @@ const reports = require('./reports');
 const captionAgent = require('./captionAgent');
 const frameExtract = require('./frameExtract');
 const commentSummary = require('./commentSummary');
+const funnelClassifier = require('./funnelClassifier');
 const auth = require('./auth');
 
 const PORT = process.env.PORT || 3001;
@@ -189,14 +190,25 @@ app.post('/api/run-agent', async (req, res) => {
 // saveData()/queueServerSync() debounce push the updated blob to Supabase.
 const ADD_BACKLOG_IDEAS_TOOL = {
   name: 'add_backlog_ideas',
-  description: 'Add one or more distinct Instagram Reel ideas to the ideas backlog pipeline, each as its own tracked entry. Call this when the user pastes multiple reel ideas at once (one per line, numbered, or bulleted) so they get split into separate backlog items instead of staying lumped together.',
+  description: 'Add one or more distinct Instagram Reel ideas to the ideas backlog pipeline, each as its own tracked entry with its funnel-stage classification. Call this when the user pastes multiple reel ideas at once (one per line, numbered, or bulleted) so they get split into separate backlog items instead of staying lumped together.',
   input_schema: {
     type: 'object',
     properties: {
       ideas: {
         type: 'array',
-        items: { type: 'string' },
-        description: 'Array of distinct reel idea strings, one per idea. Do not merge multiple ideas into a single array entry.'
+        items: {
+          type: 'object',
+          properties: {
+            text: { type: 'string', description: 'The reel idea text.' },
+            funnelStage: {
+              type: 'string',
+              enum: ['TOFU', 'MOFU', 'BOFU'],
+              description: 'TOFU = broad-reach awareness, MOFU = consideration/trust-building, BOFU = conversion-focused. Classify every idea.'
+            }
+          },
+          required: ['text', 'funnelStage']
+        },
+        description: 'Array of distinct reel ideas, each with its own text and funnel-stage classification. Do not merge multiple ideas into a single array entry.'
       }
     },
     required: ['ideas']
@@ -264,6 +276,27 @@ app.post('/api/chat', async (req, res) => {
     const detail = (err && err.message) || 'Unknown error calling the Claude API.';
     console.error('Anthropic API error:', detail);
     res.status(502).json({ error: detail });
+  }
+});
+
+// Manual "+ Add" backlog entries don't go through the Ideas Agent tool call,
+// so they need their own cheap one-shot classification -- same
+// cheap-Haiku-one-shot pattern as the comment-sentiment/caption endpoints
+// above, just with a one-word response instead of a structured block.
+app.post('/api/ideas/classify-funnel-stage', async (req, res) => {
+  const { text } = req.body || {};
+  if (!text || typeof text !== 'string') return res.status(400).json({ error: 'Missing idea text.' });
+  if (!aiClient.getClient()) {
+    return res.status(400).json({ error: 'ANTHROPIC_API_KEY is not set — see AI-AGENT-SETUP.md.' });
+  }
+  try {
+    const prompt = funnelClassifier.buildFunnelClassifyPrompt(text);
+    const result = await aiClient.runPrompt(AGENT_MODEL.ideas, prompt, { maxTokens: 10 });
+    const funnelStage = funnelClassifier.parseFunnelClassifyResponse(result.text);
+    res.json({ funnelStage, costUsd: result.costUsd });
+  } catch (err) {
+    console.error('Funnel classify error:', err.message);
+    res.status(502).json({ error: (err && err.message) || 'Could not classify idea.' });
   }
 });
 
