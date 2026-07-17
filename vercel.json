@@ -2,8 +2,8 @@
   "functions": {
     "api/index.js": { "maxDuration": 60 }
   },
-  "rewrites": [
-    { "source": "/(.*)", "destination": "/api" }
+  "routes": [
+    { "src": "/(.*)", "dest": "/api" }
   ],
   "crons": [
     { "path": "/api/cron/run-scheduler", "schedule": "0 13 * * *" }
